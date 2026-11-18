@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>징크스오 · 같은 답 찾기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#211c4a; --bg2:#2d2766; --ink:#24213f; --paper:#fffaf0; --yellow:#ffd23f; --pink:#ff4f81;
+  --teal:#2ec4b6; --red:#e63946; --t0:#ff7b6b; --t1:#4dabf7; --t2:#5ccf6e; --muted:#8a86b5;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(circle at 20% 0%,#3b3285 0,var(--bg) 55%);color:#fff;font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;min-height:100vh}
+h1,h2,h3,.jua,button,.btn{font-family:'Jua','Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-weight:400}
+button{cursor:pointer;border:none;border-radius:14px;padding:12px 18px;font-size:18px;background:var(--yellow);color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.25);transition:transform .08s}
+button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+button.ghost{background:rgba(255,255,255,.12);color:#fff;box-shadow:none}
+button.pink{background:var(--pink);color:#fff}
+button.teal{background:var(--teal);color:#fff}
+button.sm{padding:7px 12px;font-size:15px;border-radius:10px}
+button:disabled{opacity:.45;pointer-events:none}
+input,textarea,select{font-family:inherit;font-size:18px;padding:12px 14px;border-radius:12px;border:3px solid var(--ink);background:var(--paper);color:var(--ink);width:100%;outline:none}
+input:focus,textarea:focus{border-color:var(--pink)}
+.hidden{display:none!important}
+.center{text-align:center}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.muted{color:#c9c5f0;opacity:.85}
+.logo{font-family:'Jua',sans-serif;letter-spacing:1px;line-height:1}
+.logo .j{color:var(--yellow)} .logo .o{display:inline-block;color:var(--pink);transform:rotate(-8deg)}
+.credit{position:fixed;right:10px;bottom:6px;font-size:12px;opacity:.5;pointer-events:none}
+.modebar{position:fixed;left:0;right:0;top:0;background:#ff9f1c;color:#3a2300;font-size:13px;text-align:center;padding:3px;z-index:50;font-family:'Jua'}
+
+/* 홈 */
+.home{max-width:460px;margin:0 auto;padding:60px 20px 40px}
+.home .logo{font-size:64px;text-align:center}
+.home .sub{text-align:center;margin:8px 0 30px;color:#d8d4ff}
+.card{background:var(--bg2);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 6px 0 rgba(0,0,0,.2)}
+.card h3{margin:0 0 12px;font-size:22px}
+.card input{margin-bottom:10px}
+.card button{width:100%}
+
+/* 보드 */
+.board{display:grid;grid-template-columns:repeat(3,1fr) 30px;grid-template-rows:repeat(3,1fr) 30px;gap:7px;width:100%;max-width:420px;margin:0 auto;aspect-ratio:1/1.0;padding:10px;background:var(--yellow);border-radius:18px;box-shadow:0 6px 0 #c99a10}
+.cell{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:12px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--ink);font-family:'Jua';font-size:clamp(14px,4.6vw,22px);padding:6px 4px;overflow:hidden;word-break:keep-all;line-height:1.15;user-select:none}
+.cell.l2{font-size:clamp(12px,3.8vw,18px)} .cell.l3{font-size:clamp(10px,3.1vw,15px)}
+.cell.empty{background:#fff3d6;color:#c8b48a}
+.cell.click{cursor:pointer;animation:pulse 1.6s infinite}
+.board.calm .cell.click{animation:none}
+.cell.click:hover{border-color:var(--pink)}
+.cell.sel{border-color:var(--pink);box-shadow:0 0 0 4px var(--pink) inset}
+.cell.hl{box-shadow:0 0 0 4px var(--teal) inset}
+.cell .tag{position:absolute;left:4px;top:3px;width:16px;height:16px;border-radius:50%;font-size:11px;line-height:16px;color:#fff;font-family:'Jua'}
+.cell.tp0 .tag{background:var(--t0)} .cell.tp1 .tag{background:var(--t1)} .cell.tp2 .tag{background:var(--t2)}
+.cell.tp0{border-bottom:6px solid var(--t0)} .cell.tp1{border-bottom:6px solid var(--t1)} .cell.tp2{border-bottom:6px solid var(--t2)}
+.cell .star{position:absolute;right:3px;top:0;font-size:18px;color:transparent;-webkit-text-stroke:1.4px #d4a40a}
+.cell.star-on .star{color:var(--yellow);-webkit-text-stroke:1.4px #a87b00;animation:pop .5s}
+.cell.m-o::after{content:'';position:absolute;inset:9% 6%;border:4px solid var(--red);border-radius:50%;transform:rotate(-6deg);opacity:.85;animation:draw .35s}
+.cell.m-x{color:#9b97b0}
+.cell.m-x::after{content:'';position:absolute;inset:14%;background:linear-gradient(45deg,transparent 46%,var(--red) 46%,var(--red) 54%,transparent 54%),linear-gradient(-45deg,transparent 46%,var(--red) 46%,var(--red) 54%,transparent 54%);opacity:.8}
+.bonus{display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(0,0,0,.12);color:#8a6a00;font-family:'Jua';font-size:14px}
+.bonus.on{background:var(--pink);color:#fff;animation:pop .5s}
+.board.mini{max-width:none;padding:5px;gap:3px;grid-template-columns:repeat(3,1fr) 14px;grid-template-rows:repeat(3,1fr) 14px;border-radius:10px;box-shadow:none}
+.board.mini .cell{font-size:12px;border-width:2px;border-radius:6px;padding:2px}
+.board.mini .cell .tag{display:none} .board.mini .cell .star{font-size:11px}
+.board.mini .cell.m-o::after{border-width:2px}
+.board.mini .bonus{font-size:9px;border-radius:4px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(.96)}}
+@keyframes pop{0%{transform:scale(.3)}70%{transform:scale(1.25)}100%{transform:scale(1)}}
+@keyframes draw{from{transform:rotate(-40deg) scale(.4);opacity:0}}
+@keyframes rise{from{transform:translateY(20px);opacity:0}}
+
+/* 학생 */
+.stu{max-width:520px;margin:0 auto;padding:12px 12px 120px}
+.stu .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.stu .me{font-family:'Jua';font-size:20px}
+.pill{display:inline-block;background:rgba(255,255,255,.14);border-radius:999px;padding:4px 12px;font-family:'Jua';font-size:15px}
+.pill.y{background:var(--yellow);color:var(--ink)}
+.banner{background:var(--bg2);border-radius:18px;padding:14px 16px;margin-bottom:12px;text-align:center;animation:rise .3s}
+.banner .big{font-family:'Jua';font-size:28px;line-height:1.25}
+.banner .mid{font-family:'Jua';font-size:20px}
+.banner .small{font-size:15px;color:#d8d4ff;margin-top:4px}
+.topicbox{display:inline-block;border-radius:14px;padding:6px 16px;font-family:'Jua';font-size:26px;color:#fff;margin:4px 0}
+.topicbox.t0{background:var(--t0)} .topicbox.t1{background:var(--t1)} .topicbox.t2{background:var(--t2)}
+.called{display:inline-block;background:var(--paper);color:var(--ink);border:4px solid var(--ink);border-radius:16px;padding:8px 22px;font-family:'Jua';font-size:34px;margin:6px 0;animation:pop .4s}
+.cands{display:grid;gap:10px;margin-top:10px}
+.cands button{font-size:22px;padding:16px}
+.actions{margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.vote-item{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;margin-top:8px}
+.vote-item .who{font-family:'Jua';font-size:20px;text-align:left}
+.vote-item .who small{display:block;font-family:'Gowun Dodum';font-size:13px;opacity:.8}
+.vote-item button.on{outline:4px solid #fff}
+.cd{font-family:'Jua';color:var(--yellow)}
+.breakdown{display:flex;justify-content:center;gap:14px;font-family:'Jua';font-size:20px;margin-top:8px;flex-wrap:wrap}
+
+/* 시트 */
+#sheet{position:fixed;inset:0;background:rgba(10,8,30,.55);display:flex;align-items:flex-end;justify-content:center;z-index:40}
+#sheet .in{background:var(--bg2);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 18px 26px;animation:rise .2s}
+#sheet .in h3{margin:0 0 10px;font-size:22px}
+#sheet .chips{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+#sheet .chips button{font-size:15px;padding:7px 12px}
+#sheet .chips button.t0{background:var(--t0);color:#fff} #sheet .chips button.t1{background:var(--t1);color:#fff} #sheet .chips button.t2{background:var(--t2);color:#fff}
+#sheet .chips button.off{opacity:.35}
+#sheet .warn{color:#ffb3c6;font-size:15px;min-height:20px;margin:6px 0}
+#toast{position:fixed;left:50%;top:40px;transform:translateX(-50%);background:var(--pink);color:#fff;padding:10px 18px;border-radius:12px;font-family:'Jua';font-size:18px;z-index:60;opacity:0;transition:opacity .25s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1}
+
+/* 선생님(전자칠판) */
+.host{display:grid;grid-template-columns:1fr minmax(260px,24vw);grid-template-rows:auto 1fr auto;height:100vh;gap:14px;padding:16px 18px 22px}
+.host .hd{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.host .hd .logo{font-size:44px}
+.host .code{font-family:'Jua';font-size:22px;background:var(--bg2);padding:8px 18px;border-radius:14px}
+.host .code b{font-size:34px;color:var(--yellow);letter-spacing:4px;margin-left:6px}
+.host .stage{background:var(--bg2);border-radius:24px;padding:24px;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;position:relative}
+.host .stage>:first-child{margin-top:auto}.host .stage>:last-child{margin-bottom:auto}
+body.hasbar{padding-top:24px}body.hasbar .host{height:calc(100vh - 24px)}
+.host .side{background:var(--bg2);border-radius:24px;padding:14px;overflow:auto}
+.host .ctrl{grid-column:1/2;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.host .huge{font-family:'Jua';font-size:clamp(40px,6vw,96px);line-height:1.1}
+.host .big{font-family:'Jua';font-size:clamp(26px,3.2vw,48px)}
+.host .mid{font-family:'Jua';font-size:clamp(20px,2vw,30px)}
+.host .topicbox{font-size:clamp(34px,5vw,80px);padding:10px 34px;border-radius:24px}
+.host .called{font-size:clamp(44px,6.5vw,110px);padding:10px 44px;border-width:6px;border-radius:26px}
+.host .cdbig{font-family:'Jua';font-size:clamp(30px,3vw,52px);color:var(--yellow)}
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:10px;font-size:17px}
+.plist li:nth-child(odd){background:rgba(255,255,255,.05)}
+.plist li.act{background:var(--yellow);color:var(--ink)}
+.plist .dot{width:9px;height:9px;border-radius:50%;background:#5ccf6e;flex:none}
+.plist .dot.off{background:#777}
+.plist .nm{flex:1;font-family:'Jua';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plist .st{font-size:14px;opacity:.85;min-width:28px;text-align:right}
+.plist .sc{font-family:'Jua';min-width:30px;text-align:right;color:var(--yellow)}
+.plist li.act .sc{color:var(--ink)}
+.plist .kick{background:none;box-shadow:none;color:#ff9db5;padding:0 4px;font-size:16px}
+.side h3{margin:2px 4px 10px;font-size:20px;display:flex;justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
+.chip{background:var(--teal);color:#fff;border-radius:999px;padding:6px 14px;font-family:'Jua';font-size:clamp(16px,1.5vw,24px);animation:pop .4s}
+.chip.p{background:var(--pink)}
+.chip.g{background:rgba(255,255,255,.15)}
+.hcards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.hcards button{font-size:clamp(24px,2.6vw,40px);padding:24px 30px;min-width:220px;border-radius:20px}
+.prog{width:70%;height:22px;background:rgba(0,0,0,.25);border-radius:99px;overflow:hidden;margin:16px auto 6px}
+.prog i{display:block;height:100%;background:var(--teal);transition:width .4s}
+.settings{display:grid;grid-template-columns:auto 120px;gap:10px 14px;align-items:center;text-align:left;max-width:560px;width:100%;margin-top:16px;font-size:18px}
+.settings input{padding:8px 10px;font-size:18px}
+.settings textarea{grid-column:1/3;height:110px;font-size:16px}
+.hvote{width:min(820px,100%);margin-top:14px}
+.hvote .vote-item{font-size:20px}
+.hvote .who{font-size:clamp(20px,2vw,30px)!important}
+.tally{font-family:'Jua';font-size:24px;min-width:130px}
+.rank{width:min(760px,100%);border-collapse:collapse;margin-top:14px;font-size:clamp(18px,1.7vw,26px)}
+.rank td,.rank th{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.rank th{font-family:'Jua';font-weight:400;color:#c9c5f0}
+.rank td.n{font-family:'Jua';color:var(--yellow);text-align:right}
+.rank tr.top td{background:rgba(255,210,63,.12)}
+.boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;width:100%;margin-top:14px}
+.boards .nm{font-family:'Jua';margin-bottom:4px;font-size:16px}
+.result-jinx{font-family:'Jua';font-size:clamp(70px,10vw,170px);color:var(--yellow);text-shadow:0 6px 0 var(--pink);animation:pop .6s}
+.result-miss{font-family:'Jua';font-size:clamp(50px,7vw,120px);color:#ff9db5;animation:pop .5s}
+.result-match{font-family:'Jua';font-size:clamp(50px,7vw,120px);color:var(--teal);animation:pop .5s}
+.hist{margin-top:22px;display:flex;flex-direction:column;gap:6px;align-items:center;font-size:18px;opacity:.9}
+.podium{display:flex;align-items:flex-end;gap:16px;justify-content:center;margin:20px 0}
+.podium div{background:var(--yellow);color:var(--ink);border-radius:16px 16px 0 0;width:180px;font-family:'Jua';font-size:26px;padding:12px;display:flex;flex-direction:column;justify-content:flex-start;animation:rise .6s}
+.podium .p1{height:220px;background:var(--yellow)} .podium .p2{height:160px;background:#dfe3ee} .podium .p3{height:120px;background:#f0b27a}
+.overlay{position:fixed;inset:0;background:rgba(10,8,30,.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:45;text-align:center;padding:20px}
+@media (max-width:900px){
+  .host{grid-template-columns:1fr;grid-template-rows:auto auto auto auto;height:auto}
+  .host .hd,.host .ctrl{grid-column:1}
+}
+
+/* ===== 원작 느낌 팝아트 테마 ===== */
+:root{--bg2:#4b1f7a;--purple:#7a1fa2;--mag:#e6007e}
+body{background:
+  radial-gradient(circle at 8% 12%,rgba(230,0,126,.18) 0 60px,transparent 61px),
+  radial-gradient(circle at 92% 88%,rgba(32,191,107,.22) 0 90px,transparent 91px),
+  radial-gradient(circle at 85% 8%,rgba(47,128,237,.18) 0 40px,transparent 41px),
+  repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 14px,transparent 14px 28px),
+  linear-gradient(160deg,#ffd93b,#ffc21a);background-attachment:fixed}
+.logo .j{color:#ffe14d;-webkit-text-stroke:2px var(--purple);text-shadow:4px 4px 0 var(--mag),7px 7px 0 var(--purple)}
+.logo .o{display:inline-block;background:#fff;color:var(--mag);border:5px solid var(--purple);border-radius:50%;width:1.05em;height:1.05em;line-height:.98em;text-align:center;margin-left:.08em;box-shadow:4px 4px 0 var(--mag);transform:rotate(-8deg);-webkit-text-stroke:0}
+.home .tag{width:max-content;margin:14px auto 0;background:var(--mag);color:#fff;font-family:'Jua';font-size:18px;padding:4px 16px;border-radius:999px;transform:rotate(-3deg);box-shadow:3px 3px 0 var(--purple)}
+.home .sub{color:var(--purple);font-weight:700}
+.card,.banner,.host .stage,.host .side{box-shadow:6px 6px 0 var(--mag)}
+.credit{color:var(--purple);opacity:.7}
+#h-info{color:var(--purple)} #h-info span{color:var(--mag)!important}
+.host .code{box-shadow:4px 4px 0 var(--mag)}
+button{box-shadow:0 4px 0 rgba(60,10,90,.45)}
+button.ghost{background:#8a55c9;color:#fff;box-shadow:0 4px 0 rgba(60,10,90,.45)}
+.stu .me{color:var(--purple)}
+.stu .pill{background:var(--purple);color:#fff} .stu .pill.y{background:var(--mag);color:#fff}
+/* 보드 */
+.board{background:var(--fr);box-shadow:5px 5px 0 rgba(60,10,90,.55);border:4px solid var(--purple);background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.12) 0 8px,transparent 8px 16px)}
+.cell{border-color:#3a2a55;box-shadow:inset 0 -4px 0 rgba(0,0,0,.06)}
+.cell.empty{background:#fffdf6;color:#d6cbb0}
+.cell .star{-webkit-text-stroke:1.4px #b48a00}
+.bonus{background:none;border-radius:0}
+.bonus span{display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#fff;border:3px solid var(--purple);color:var(--purple);font-family:'Jua';font-size:15px}
+.bonus.on span{background:var(--mag);color:#fff;border-color:#fff;animation:pop .5s}
+.board.mini .bonus{background:none}
+.board.mini .bonus span{width:13px;height:13px;border-width:1.5px;font-size:8px}
+.scorestrip{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 12px;margin:12px auto 0;max-width:420px;background:#fff;color:var(--ink);border:3px solid var(--purple);border-radius:14px;padding:8px 10px;font-size:15px;box-shadow:4px 4px 0 var(--mag)}
+.scorestrip b{font-family:'Jua';color:var(--mag)} .scorestrip .tot b{font-size:20px}
+.hcards button{min-width:280px}
+
+.plist .rk{min-width:24px;text-align:center;font-family:'Jua';font-size:15px;opacity:.9}
+.rankbox{margin:14px auto 0;max-width:420px;background:var(--bg2);border-radius:16px;padding:10px 14px;box-shadow:5px 5px 0 var(--mag)}
+.rankbox .rt{font-family:'Jua';font-size:18px;margin-bottom:6px;display:flex;justify-content:space-between}
+.rankbox .rt small{font-size:14px;opacity:.75}
+.rrow{display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:10px;font-size:16px}
+.rrow .rk{min-width:34px;font-family:'Jua'} .rrow .nm{flex:1;font-family:'Jua'} .rrow b{font-family:'Jua';color:var(--yellow)}
+.rrow.me{background:var(--yellow);color:var(--ink)} .rrow.me b{color:var(--mag)}
+.rdots{text-align:center;opacity:.6;line-height:.8}
+
+.pend{margin-top:14px;width:min(900px,100%)}
+.pend .pl{font-family:'Jua';font-size:17px}
+.pend .pl b{color:#ff9db5}
+.pend.big .pl{font-size:clamp(20px,1.9vw,28px)}
+.pend .chip.w{background:#fff;color:var(--mag);border:3px solid var(--mag);animation:none}
+.pend.big .chip.w{font-size:clamp(18px,1.6vw,26px)}
+.pend.done{font-family:'Jua';font-size:20px;color:#7ef0a8}
+.plist li.wait{background:rgba(230,0,126,.35)!important}
+.plist li.wait .st{color:#ffd1e3;font-weight:700}
+
+.lobby{display:flex;gap:34px;align-items:center;justify-content:center;flex-wrap:wrap}
+.qrcard{background:#fff;border-radius:22px;padding:14px 14px 8px;box-shadow:6px 6px 0 var(--mag);cursor:pointer}
+.qrcard svg{width:min(30vh,300px);height:min(30vh,300px);display:block}
+.qrhint{color:var(--purple);font-family:'Jua';font-size:16px;margin-top:4px}
+.lobinfo{display:flex;flex-direction:column;align-items:center;gap:10px}
+.bigcode{font-family:'Jua';font-size:clamp(60px,8vw,120px);color:var(--yellow);letter-spacing:10px;line-height:1}
+.lobinfo .url{background:var(--paper);color:var(--ink);padding:6px 14px;border-radius:10px;font-size:15px;word-break:break-all;max-width:420px}
+.lobplayers{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:10px;max-width:900px}
+.lp{display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--ink);border-radius:999px;padding:6px 6px 6px 16px;font-family:'Jua';font-size:clamp(18px,1.6vw,24px);animation:pop .35s}
+.lp.off{opacity:.45}
+.lp button{background:var(--mag);color:#fff;border-radius:50%;width:30px;height:30px;padding:0;font-size:15px;box-shadow:none}
+.setbox{margin-top:18px;width:min(600px,100%);text-align:left}
+.setbox summary{font-family:'Jua';font-size:20px;cursor:pointer;text-align:center;padding:8px;background:rgba(255,255,255,.08);border-radius:12px}
+.qrbig{cursor:pointer}
+.qrbox{background:#fff;padding:18px;border-radius:24px}
+.qrbox svg{width:min(62vh,80vw);height:min(62vh,80vw);display:block}
+</style>
+</head>
+<body>
+<div id="modebar" class="modebar hidden"></div>
+<div id="app"></div>
+<div id="sheet" class="hidden"></div>
+<div id="toast"></div>
+<div class="credit">made by m00n</div>
+
+<script>
+/* =========================================================
+   징크스오 (JinxO) 웹앱 — made by m00n
+   ---------------------------------------------------------
+   ▶ Firebase 연결: 아래 FIREBASE_CONFIG 에 스트림스와 같은
+     Firebase 프로젝트 설정값을 붙여 넣으세요.
+     (databaseURL 이 비어 있으면 '로컬 테스트 모드'로 동작:
+      같은 브라우저의 여러 탭끼리만 연결됩니다.)
+   ▶ 데이터 경로: jinxo/rooms/{방코드}
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyANLNP_RCtEuPMZb_-QGlT27VHczGVdFng",
+  authDomain: "railkorea-220d0.firebaseapp.com",
+  databaseURL: "https://railkorea-220d0-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "railkorea-220d0",
+  storageBucket: "railkorea-220d0.firebasestorage.app",
+  messagingSenderId: "249090041476",
+  appId: "1:249090041476:web:86a639ddaec763b06244d1"
+};
+const DB_ROOT = 'jinxo/rooms';
+
+/* QRCode for JavaScript — Copyright (c) 2009 Kazuhiko Arase, MIT license (http://www.d-project.com/). "QR Code" is a registered trademark of DENSO WAVE. */
+const QRLib=(function(){const M={},C={};function req(n){n=n.replace('./','');if(C[n])return C[n].exports;const m={exports:{}};C[n]=m;M[n](m,m.exports,req);return m.exports;}
+M['QRErrorCorrectLevel']=function(module,exports,require){
+module.exports = {
+	L : 1,
+	M : 0,
+	Q : 3,
+	H : 2
+};
+
+
+};
+M['QRPolynomial']=function(module,exports,require){
+var QRMath = require('./QRMath');
+
+function QRPolynomial(num, shift) {
+	if (num.length === undefined) {
+		throw new Error(num.length + "/" + shift);
+	}
+
+	var offset = 0;
+
+	while (offset < num.length && num[offset] === 0) {
+		offset++;
+	}
+
+	this.num = new Array(num.length - offset + shift);
+	for (var i = 0; i < num.length - offset; i++) {
+		this.num[i] = num[i + offset];
+	}
+}
+
+QRPolynomial.prototype = {
+
+	get : function(index) {
+		return this.num[index];
+	},
+	
+	getLength : function() {
+		return this.num.length;
+	},
+	
+	multiply : function(e) {
+	
+		var num = new Array(this.getLength() + e.getLength() - 1);
+	
+		for (var i = 0; i < this.getLength(); i++) {
+			for (var j = 0; j < e.getLength(); j++) {
+				num[i + j] ^= QRMath.gexp(QRMath.glog(this.get(i) ) + QRMath.glog(e.get(j) ) );
+			}
+		}
+	
+		return new QRPolynomial(num, 0);
+	},
+	
+	mod : function(e) {
+	
+		if (this.getLength() - e.getLength() < 0) {
+			return this;
+		}
+	
+		var ratio = QRMath.glog(this.get(0) ) - QRMath.glog(e.get(0) );
+	
+		var num = new Array(this.getLength() );
+		
+		for (var i = 0; i < this.getLength(); i++) {
+			num[i] = this.get(i);
+		}
+		
+		for (var x = 0; x < e.getLength(); x++) {
+			num[x] ^= QRMath.gexp(QRMath.glog(e.get(x) ) + ratio);
+		}
+	
+		// recursive call
+		return new QRPolynomial(num, 0).mod(e);
+	}
+};
+
+module.exports = QRPolynomial;
+
+};
+M['QRMaskPattern']=function(module,exports,require){
+module.exports = {
+	PATTERN000 : 0,
+	PATTERN001 : 1,
+	PATTERN010 : 2,
+	PATTERN011 : 3,
+	PATTERN100 : 4,
+	PATTERN101 : 5,
+	PATTERN110 : 6,
+	PATTERN111 : 7
+};
+
+};
+M['QRMode']=function(module,exports,require){
+module.exports = {
+    MODE_NUMBER :       1 << 0,
+    MODE_ALPHA_NUM :    1 << 1,
+    MODE_8BIT_BYTE :    1 << 2,
+    MODE_KANJI :        1 << 3
+};
+
+};
+M['QRUtil']=function(module,exports,require){
+var QRMode = require('./QRMode');
+var QRPolynomial = require('./QRPolynomial');
+var QRMath = require('./QRMath');
+var QRMaskPattern = require('./QRMaskPattern');
+
+var QRUtil = {
+
+    PATTERN_POSITION_TABLE : [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ],
+
+    G15 : (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
+    G18 : (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
+    G15_MASK : (1 << 14) | (1 << 12) | (1 << 10)    | (1 << 4) | (1 << 1),
+
+    getBCHTypeInfo : function(data) {
+        var d = data << 10;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+            d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) ) );    
+        }
+        return ( (data << 10) | d) ^ QRUtil.G15_MASK;
+    },
+
+    getBCHTypeNumber : function(data) {
+        var d = data << 12;
+        while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+            d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) ) );    
+        }
+        return (data << 12) | d;
+    },
+
+    getBCHDigit : function(data) {
+
+        var digit = 0;
+
+        while (data !== 0) {
+            digit++;
+            data >>>= 1;
+        }
+
+        return digit;
+    },
+
+    getPatternPosition : function(typeNumber) {
+        return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
+    },
+
+    getMask : function(maskPattern, i, j) {
+        
+        switch (maskPattern) {
+            
+        case QRMaskPattern.PATTERN000 : return (i + j) % 2 === 0;
+        case QRMaskPattern.PATTERN001 : return i % 2 === 0;
+        case QRMaskPattern.PATTERN010 : return j % 3 === 0;
+        case QRMaskPattern.PATTERN011 : return (i + j) % 3 === 0;
+        case QRMaskPattern.PATTERN100 : return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 === 0;
+        case QRMaskPattern.PATTERN101 : return (i * j) % 2 + (i * j) % 3 === 0;
+        case QRMaskPattern.PATTERN110 : return ( (i * j) % 2 + (i * j) % 3) % 2 === 0;
+        case QRMaskPattern.PATTERN111 : return ( (i * j) % 3 + (i + j) % 2) % 2 === 0;
+
+        default :
+            throw new Error("bad maskPattern:" + maskPattern);
+        }
+    },
+
+    getErrorCorrectPolynomial : function(errorCorrectLength) {
+
+        var a = new QRPolynomial([1], 0);
+
+        for (var i = 0; i < errorCorrectLength; i++) {
+            a = a.multiply(new QRPolynomial([1, QRMath.gexp(i)], 0) );
+        }
+
+        return a;
+    },
+
+    getLengthInBits : function(mode, type) {
+
+        if (1 <= type && type < 10) {
+
+            // 1 - 9
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 10;
+            case QRMode.MODE_ALPHA_NUM  : return 9;
+            case QRMode.MODE_8BIT_BYTE  : return 8;
+            case QRMode.MODE_KANJI      : return 8;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 27) {
+
+            // 10 - 26
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 12;
+            case QRMode.MODE_ALPHA_NUM  : return 11;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 10;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else if (type < 41) {
+
+            // 27 - 40
+
+            switch(mode) {
+            case QRMode.MODE_NUMBER     : return 14;
+            case QRMode.MODE_ALPHA_NUM  : return 13;
+            case QRMode.MODE_8BIT_BYTE  : return 16;
+            case QRMode.MODE_KANJI      : return 12;
+            default :
+                throw new Error("mode:" + mode);
+            }
+
+        } else {
+            throw new Error("type:" + type);
+        }
+    },
+
+    getLostPoint : function(qrCode) {
+        
+        var moduleCount = qrCode.getModuleCount();
+        var lostPoint = 0;
+        var row = 0; 
+        var col = 0;
+
+        
+        // LEVEL1
+        
+        for (row = 0; row < moduleCount; row++) {
+
+            for (col = 0; col < moduleCount; col++) {
+
+                var sameCount = 0;
+                var dark = qrCode.isDark(row, col);
+
+                for (var r = -1; r <= 1; r++) {
+
+                    if (row + r < 0 || moduleCount <= row + r) {
+                        continue;
+                    }
+
+                    for (var c = -1; c <= 1; c++) {
+
+                        if (col + c < 0 || moduleCount <= col + c) {
+                            continue;
+                        }
+
+                        if (r === 0 && c === 0) {
+                            continue;
+                        }
+
+                        if (dark === qrCode.isDark(row + r, col + c) ) {
+                            sameCount++;
+                        }
+                    }
+                }
+
+                if (sameCount > 5) {
+                    lostPoint += (3 + sameCount - 5);
+                }
+            }
+        }
+
+        // LEVEL2
+
+        for (row = 0; row < moduleCount - 1; row++) {
+            for (col = 0; col < moduleCount - 1; col++) {
+                var count = 0;
+                if (qrCode.isDark(row,     col    ) ) count++;
+                if (qrCode.isDark(row + 1, col    ) ) count++;
+                if (qrCode.isDark(row,     col + 1) ) count++;
+                if (qrCode.isDark(row + 1, col + 1) ) count++;
+                if (count === 0 || count === 4) {
+                    lostPoint += 3;
+                }
+            }
+        }
+
+        // LEVEL3
+
+        for (row = 0; row < moduleCount; row++) {
+            for (col = 0; col < moduleCount - 6; col++) {
+                if (qrCode.isDark(row, col) && 
+                        !qrCode.isDark(row, col + 1) && 
+                         qrCode.isDark(row, col + 2) && 
+                         qrCode.isDark(row, col + 3) && 
+                         qrCode.isDark(row, col + 4) && 
+                        !qrCode.isDark(row, col + 5) && 
+                         qrCode.isDark(row, col + 6) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount - 6; row++) {
+                if (qrCode.isDark(row, col) &&
+                        !qrCode.isDark(row + 1, col) &&
+                         qrCode.isDark(row + 2, col) &&
+                         qrCode.isDark(row + 3, col) &&
+                         qrCode.isDark(row + 4, col) &&
+                        !qrCode.isDark(row + 5, col) &&
+                         qrCode.isDark(row + 6, col) ) {
+                    lostPoint += 40;
+                }
+            }
+        }
+
+        // LEVEL4
+        
+        var darkCount = 0;
+
+        for (col = 0; col < moduleCount; col++) {
+            for (row = 0; row < moduleCount; row++) {
+                if (qrCode.isDark(row, col) ) {
+                    darkCount++;
+                }
+            }
+        }
+        
+        var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+        lostPoint += ratio * 10;
+
+        return lostPoint;       
+    }
+
+};
+
+module.exports = QRUtil;
+
+};
+M['QRMath']=function(module,exports,require){
+var QRMath = {
+
+	glog : function(n) {
+	
+		if (n < 1) {
+			throw new Error("glog(" + n + ")");
+		}
+		
+		return QRMath.LOG_TABLE[n];
+	},
+	
+	gexp : function(n) {
+	
+		while (n < 0) {
+			n += 255;
+		}
+	
+		while (n >= 256) {
+			n -= 255;
+		}
+	
+		return QRMath.EXP_TABLE[n];
+	},
+	
+	EXP_TABLE : new Array(256),
+	
+	LOG_TABLE : new Array(256)
+
+};
+	
+for (var i = 0; i < 8; i++) {
+	QRMath.EXP_TABLE[i] = 1 << i;
+}
+for (var i = 8; i < 256; i++) {
+	QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4]
+		^ QRMath.EXP_TABLE[i - 5]
+		^ QRMath.EXP_TABLE[i - 6]
+		^ QRMath.EXP_TABLE[i - 8];
+}
+for (var i = 0; i < 255; i++) {
+	QRMath.LOG_TABLE[QRMath.EXP_TABLE[i] ] = i;
+}
+
+module.exports = QRMath;
+
+};
+M['QR8bitByte']=function(module,exports,require){
+var QRMode = require('./QRMode');
+
+function QR8bitByte(data) {
+	this.mode = QRMode.MODE_8BIT_BYTE;
+	this.data = data;
+}
+
+QR8bitByte.prototype = {
+
+	getLength : function() {
+		return this.data.length;
+	},
+	
+	write : function(buffer) {
+		for (var i = 0; i < this.data.length; i++) {
+			// not JIS ...
+			buffer.put(this.data.charCodeAt(i), 8);
+		}
+	}
+};
+
+module.exports = QR8bitByte;
+
+};
+M['index']=function(module,exports,require){
+//---------------------------------------------------------------------
+// QRCode for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//   http://www.opensource.org/licenses/mit-license.php
+//
+// The word "QR Code" is registered trademark of 
+// DENSO WAVE INCORPORATED
+//   http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+// Modified to work in node for this project (and some refactoring)
+//---------------------------------------------------------------------
+
+var QR8bitByte = require('./QR8bitByte');
+var QRUtil = require('./QRUtil');
+var QRPolynomial = require('./QRPolynomial');
+var QRRSBlock = require('./QRRSBlock');
+var QRBitBuffer = require('./QRBitBuffer');
+
+function QRCode(typeNumber, errorCorrectLevel) {
+	this.typeNumber = typeNumber;
+	this.errorCorrectLevel = errorCorrectLevel;
+	this.modules = null;
+	this.moduleCount = 0;
+	this.dataCache = null;
+	this.dataList = [];
+}
+
+QRCode.prototype = {
+	
+	addData : function(data) {
+		var newData = new QR8bitByte(data);
+		this.dataList.push(newData);
+		this.dataCache = null;
+	},
+	
+	isDark : function(row, col) {
+		if (row < 0 || this.moduleCount <= row || col < 0 || this.moduleCount <= col) {
+			throw new Error(row + "," + col);
+		}
+		return this.modules[row][col];
+	},
+
+	getModuleCount : function() {
+		return this.moduleCount;
+	},
+	
+	make : function() {
+		// Calculate automatically typeNumber if provided is < 1
+		if (this.typeNumber < 1 ){
+			var typeNumber = 1;
+			for (typeNumber = 1; typeNumber < 40; typeNumber++) {
+				var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, this.errorCorrectLevel);
+
+				var buffer = new QRBitBuffer();
+				var totalDataCount = 0;
+				for (var i = 0; i < rsBlocks.length; i++) {
+					totalDataCount += rsBlocks[i].dataCount;
+				}
+
+				for (var x = 0; x < this.dataList.length; x++) {
+					var data = this.dataList[x];
+					buffer.put(data.mode, 4);
+					buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+					data.write(buffer);
+				}
+				if (buffer.getLengthInBits() <= totalDataCount * 8)
+					break;
+			}
+			this.typeNumber = typeNumber;
+		}
+		this.makeImpl(false, this.getBestMaskPattern() );
+	},
+	
+	makeImpl : function(test, maskPattern) {
+		
+		this.moduleCount = this.typeNumber * 4 + 17;
+		this.modules = new Array(this.moduleCount);
+		
+		for (var row = 0; row < this.moduleCount; row++) {
+			
+			this.modules[row] = new Array(this.moduleCount);
+			
+			for (var col = 0; col < this.moduleCount; col++) {
+				this.modules[row][col] = null;//(col + row) % 3;
+			}
+		}
+	
+		this.setupPositionProbePattern(0, 0);
+		this.setupPositionProbePattern(this.moduleCount - 7, 0);
+		this.setupPositionProbePattern(0, this.moduleCount - 7);
+		this.setupPositionAdjustPattern();
+		this.setupTimingPattern();
+		this.setupTypeInfo(test, maskPattern);
+		
+		if (this.typeNumber >= 7) {
+			this.setupTypeNumber(test);
+		}
+	
+		if (this.dataCache === null) {
+			this.dataCache = QRCode.createData(this.typeNumber, this.errorCorrectLevel, this.dataList);
+		}
+	
+		this.mapData(this.dataCache, maskPattern);
+	},
+
+	setupPositionProbePattern : function(row, col)  {
+		
+		for (var r = -1; r <= 7; r++) {
+			
+			if (row + r <= -1 || this.moduleCount <= row + r) continue;
+			
+			for (var c = -1; c <= 7; c++) {
+				
+				if (col + c <= -1 || this.moduleCount <= col + c) continue;
+				
+				if ( (0 <= r && r <= 6 && (c === 0 || c === 6) ) || 
+                     (0 <= c && c <= 6 && (r === 0 || r === 6) ) || 
+                     (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+					this.modules[row + r][col + c] = true;
+				} else {
+					this.modules[row + r][col + c] = false;
+				}
+			}		
+		}		
+	},
+	
+	getBestMaskPattern : function() {
+	
+		var minLostPoint = 0;
+		var pattern = 0;
+	
+		for (var i = 0; i < 8; i++) {
+			
+			this.makeImpl(true, i);
+	
+			var lostPoint = QRUtil.getLostPoint(this);
+	
+			if (i === 0 || minLostPoint >  lostPoint) {
+				minLostPoint = lostPoint;
+				pattern = i;
+			}
+		}
+	
+		return pattern;
+	},
+	
+	createMovieClip : function(target_mc, instance_name, depth) {
+	
+		var qr_mc = target_mc.createEmptyMovieClip(instance_name, depth);
+		var cs = 1;
+	
+		this.make();
+
+		for (var row = 0; row < this.modules.length; row++) {
+			
+			var y = row * cs;
+			
+			for (var col = 0; col < this.modules[row].length; col++) {
+	
+				var x = col * cs;
+				var dark = this.modules[row][col];
+			
+				if (dark) {
+					qr_mc.beginFill(0, 100);
+					qr_mc.moveTo(x, y);
+					qr_mc.lineTo(x + cs, y);
+					qr_mc.lineTo(x + cs, y + cs);
+					qr_mc.lineTo(x, y + cs);
+					qr_mc.endFill();
+				}
+			}
+		}
+		
+		return qr_mc;
+	},
+
+	setupTimingPattern : function() {
+		
+		for (var r = 8; r < this.moduleCount - 8; r++) {
+			if (this.modules[r][6] !== null) {
+				continue;
+			}
+			this.modules[r][6] = (r % 2 === 0);
+		}
+	
+		for (var c = 8; c < this.moduleCount - 8; c++) {
+			if (this.modules[6][c] !== null) {
+				continue;
+			}
+			this.modules[6][c] = (c % 2 === 0);
+		}
+	},
+	
+	setupPositionAdjustPattern : function() {
+	
+		var pos = QRUtil.getPatternPosition(this.typeNumber);
+		
+		for (var i = 0; i < pos.length; i++) {
+		
+			for (var j = 0; j < pos.length; j++) {
+			
+				var row = pos[i];
+				var col = pos[j];
+				
+				if (this.modules[row][col] !== null) {
+					continue;
+				}
+				
+				for (var r = -2; r <= 2; r++) {
+				
+					for (var c = -2; c <= 2; c++) {
+					
+						if (Math.abs(r) === 2 || 
+                            Math.abs(c) === 2 ||
+                            (r === 0 && c === 0) ) {
+							this.modules[row + r][col + c] = true;
+						} else {
+							this.modules[row + r][col + c] = false;
+						}
+					}
+				}
+			}
+		}
+	},
+	
+	setupTypeNumber : function(test) {
+	
+		var bits = QRUtil.getBCHTypeNumber(this.typeNumber);
+        var mod;
+	
+		for (var i = 0; i < 18; i++) {
+			mod = (!test && ( (bits >> i) & 1) === 1);
+			this.modules[Math.floor(i / 3)][i % 3 + this.moduleCount - 8 - 3] = mod;
+		}
+	
+		for (var x = 0; x < 18; x++) {
+			mod = (!test && ( (bits >> x) & 1) === 1);
+			this.modules[x % 3 + this.moduleCount - 8 - 3][Math.floor(x / 3)] = mod;
+		}
+	},
+	
+	setupTypeInfo : function(test, maskPattern) {
+	
+		var data = (this.errorCorrectLevel << 3) | maskPattern;
+		var bits = QRUtil.getBCHTypeInfo(data);
+        var mod;
+	
+		// vertical		
+		for (var v = 0; v < 15; v++) {
+	
+			mod = (!test && ( (bits >> v) & 1) === 1);
+	
+			if (v < 6) {
+				this.modules[v][8] = mod;
+			} else if (v < 8) {
+				this.modules[v + 1][8] = mod;
+			} else {
+				this.modules[this.moduleCount - 15 + v][8] = mod;
+			}
+		}
+	
+		// horizontal
+		for (var h = 0; h < 15; h++) {
+	
+			mod = (!test && ( (bits >> h) & 1) === 1);
+			
+			if (h < 8) {
+				this.modules[8][this.moduleCount - h - 1] = mod;
+			} else if (h < 9) {
+				this.modules[8][15 - h - 1 + 1] = mod;
+			} else {
+				this.modules[8][15 - h - 1] = mod;
+			}
+		}
+	
+		// fixed module
+		this.modules[this.moduleCount - 8][8] = (!test);
+	
+	},
+	
+	mapData : function(data, maskPattern) {
+		
+		var inc = -1;
+		var row = this.moduleCount - 1;
+		var bitIndex = 7;
+		var byteIndex = 0;
+		
+		for (var col = this.moduleCount - 1; col > 0; col -= 2) {
+	
+			if (col === 6) col--;
+	
+			while (true) {
+	
+				for (var c = 0; c < 2; c++) {
+					
+					if (this.modules[row][col - c] === null) {
+						
+						var dark = false;
+	
+						if (byteIndex < data.length) {
+							dark = ( ( (data[byteIndex] >>> bitIndex) & 1) === 1);
+						}
+	
+						var mask = QRUtil.getMask(maskPattern, row, col - c);
+	
+						if (mask) {
+							dark = !dark;
+						}
+						
+						this.modules[row][col - c] = dark;
+						bitIndex--;
+	
+						if (bitIndex === -1) {
+							byteIndex++;
+							bitIndex = 7;
+						}
+					}
+				}
+								
+				row += inc;
+	
+				if (row < 0 || this.moduleCount <= row) {
+					row -= inc;
+					inc = -inc;
+					break;
+				}
+			}
+		}
+		
+	}
+
+};
+
+QRCode.PAD0 = 0xEC;
+QRCode.PAD1 = 0x11;
+
+QRCode.createData = function(typeNumber, errorCorrectLevel, dataList) {
+	
+	var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectLevel);
+	
+	var buffer = new QRBitBuffer();
+	
+	for (var i = 0; i < dataList.length; i++) {
+		var data = dataList[i];
+		buffer.put(data.mode, 4);
+		buffer.put(data.getLength(), QRUtil.getLengthInBits(data.mode, typeNumber) );
+		data.write(buffer);
+	}
+
+	// calc num max data.
+	var totalDataCount = 0;
+	for (var x = 0; x < rsBlocks.length; x++) {
+		totalDataCount += rsBlocks[x].dataCount;
+	}
+
+	if (buffer.getLengthInBits() > totalDataCount * 8) {
+		throw new Error("code length overflow. (" + 
+            buffer.getLengthInBits() + 
+            ">" +  
+            totalDataCount * 8 + 
+            ")");
+	}
+
+	// end code
+	if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+		buffer.put(0, 4);
+	}
+
+	// padding
+	while (buffer.getLengthInBits() % 8 !== 0) {
+		buffer.putBit(false);
+	}
+
+	// padding
+	while (true) {
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD0, 8);
+		
+		if (buffer.getLengthInBits() >= totalDataCount * 8) {
+			break;
+		}
+		buffer.put(QRCode.PAD1, 8);
+	}
+
+	return QRCode.createBytes(buffer, rsBlocks);
+};
+
+QRCode.createBytes = function(buffer, rsBlocks) {
+
+	var offset = 0;
+	
+	var maxDcCount = 0;
+	var maxEcCount = 0;
+	
+	var dcdata = new Array(rsBlocks.length);
+	var ecdata = new Array(rsBlocks.length);
+	
+	for (var r = 0; r < rsBlocks.length; r++) {
+
+		var dcCount = rsBlocks[r].dataCount;
+		var ecCount = rsBlocks[r].totalCount - dcCount;
+
+		maxDcCount = Math.max(maxDcCount, dcCount);
+		maxEcCount = Math.max(maxEcCount, ecCount);
+		
+		dcdata[r] = new Array(dcCount);
+		
+		for (var i = 0; i < dcdata[r].length; i++) {
+			dcdata[r][i] = 0xff & buffer.buffer[i + offset];
+		}
+		offset += dcCount;
+		
+		var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+		var rawPoly = new QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+		var modPoly = rawPoly.mod(rsPoly);
+		ecdata[r] = new Array(rsPoly.getLength() - 1);
+		for (var x = 0; x < ecdata[r].length; x++) {
+            var modIndex = x + modPoly.getLength() - ecdata[r].length;
+			ecdata[r][x] = (modIndex >= 0)? modPoly.get(modIndex) : 0;
+		}
+
+	}
+	
+	var totalCodeCount = 0;
+	for (var y = 0; y < rsBlocks.length; y++) {
+		totalCodeCount += rsBlocks[y].totalCount;
+	}
+
+	var data = new Array(totalCodeCount);
+	var index = 0;
+
+	for (var z = 0; z < maxDcCount; z++) {
+		for (var s = 0; s < rsBlocks.length; s++) {
+			if (z < dcdata[s].length) {
+				data[index++] = dcdata[s][z];
+			}
+		}
+	}
+
+	for (var xx = 0; xx < maxEcCount; xx++) {
+		for (var t = 0; t < rsBlocks.length; t++) {
+			if (xx < ecdata[t].length) {
+				data[index++] = ecdata[t][xx];
+			}
+		}
+	}
+
+	return data;
+
+};
+
+module.exports = QRCode;
+
+};
+M['QRBitBuffer']=function(module,exports,require){
+function QRBitBuffer() {
+	this.buffer = [];
+	this.length = 0;
+}
+
+QRBitBuffer.prototype = {
+
+	get : function(index) {
+		var bufIndex = Math.floor(index / 8);
+		return ( (this.buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+	},
+	
+	put : function(num, length) {
+		for (var i = 0; i < length; i++) {
+			this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+		}
+	},
+	
+	getLengthInBits : function() {
+		return this.length;
+	},
+	
+	putBit : function(bit) {
+	
+		var bufIndex = Math.floor(this.length / 8);
+		if (this.buffer.length <= bufIndex) {
+			this.buffer.push(0);
+		}
+	
+		if (bit) {
+			this.buffer[bufIndex] |= (0x80 >>> (this.length % 8) );
+		}
+	
+		this.length++;
+	}
+};
+
+module.exports = QRBitBuffer;
+
+};
+M['QRRSBlock']=function(module,exports,require){
+var QRErrorCorrectLevel = require('./QRErrorCorrectLevel');
+
+function QRRSBlock(totalCount, dataCount) {
+	this.totalCount = totalCount;
+	this.dataCount  = dataCount;
+}
+
+QRRSBlock.RS_BLOCK_TABLE = [
+
+	// L
+	// M
+	// Q
+	// H
+
+	// 1
+	[1, 26, 19],
+	[1, 26, 16],
+	[1, 26, 13],
+	[1, 26, 9],
+	
+	// 2
+	[1, 44, 34],
+	[1, 44, 28],
+	[1, 44, 22],
+	[1, 44, 16],
+
+	// 3
+	[1, 70, 55],
+	[1, 70, 44],
+	[2, 35, 17],
+	[2, 35, 13],
+
+	// 4		
+	[1, 100, 80],
+	[2, 50, 32],
+	[2, 50, 24],
+	[4, 25, 9],
+	
+	// 5
+	[1, 134, 108],
+	[2, 67, 43],
+	[2, 33, 15, 2, 34, 16],
+	[2, 33, 11, 2, 34, 12],
+	
+	// 6
+	[2, 86, 68],
+	[4, 43, 27],
+	[4, 43, 19],
+	[4, 43, 15],
+	
+	// 7		
+	[2, 98, 78],
+	[4, 49, 31],
+	[2, 32, 14, 4, 33, 15],
+	[4, 39, 13, 1, 40, 14],
+	
+	// 8
+	[2, 121, 97],
+	[2, 60, 38, 2, 61, 39],
+	[4, 40, 18, 2, 41, 19],
+	[4, 40, 14, 2, 41, 15],
+	
+	// 9
+	[2, 146, 116],
+	[3, 58, 36, 2, 59, 37],
+	[4, 36, 16, 4, 37, 17],
+	[4, 36, 12, 4, 37, 13],
+	
+	// 10		
+	[2, 86, 68, 2, 87, 69],
+	[4, 69, 43, 1, 70, 44],
+	[6, 43, 19, 2, 44, 20],
+	[6, 43, 15, 2, 44, 16],
+
+	// 11
+	[4, 101, 81],
+	[1, 80, 50, 4, 81, 51],
+	[4, 50, 22, 4, 51, 23],
+	[3, 36, 12, 8, 37, 13],
+
+	// 12
+	[2, 116, 92, 2, 117, 93],
+	[6, 58, 36, 2, 59, 37],
+	[4, 46, 20, 6, 47, 21],
+	[7, 42, 14, 4, 43, 15],
+
+	// 13
+	[4, 133, 107],
+	[8, 59, 37, 1, 60, 38],
+	[8, 44, 20, 4, 45, 21],
+	[12, 33, 11, 4, 34, 12],
+
+	// 14
+	[3, 145, 115, 1, 146, 116],
+	[4, 64, 40, 5, 65, 41],
+	[11, 36, 16, 5, 37, 17],
+	[11, 36, 12, 5, 37, 13],
+
+	// 15
+	[5, 109, 87, 1, 110, 88],
+	[5, 65, 41, 5, 66, 42],
+	[5, 54, 24, 7, 55, 25],
+	[11, 36, 12],
+
+	// 16
+	[5, 122, 98, 1, 123, 99],
+	[7, 73, 45, 3, 74, 46],
+	[15, 43, 19, 2, 44, 20],
+	[3, 45, 15, 13, 46, 16],
+
+	// 17
+	[1, 135, 107, 5, 136, 108],
+	[10, 74, 46, 1, 75, 47],
+	[1, 50, 22, 15, 51, 23],
+	[2, 42, 14, 17, 43, 15],
+
+	// 18
+	[5, 150, 120, 1, 151, 121],
+	[9, 69, 43, 4, 70, 44],
+	[17, 50, 22, 1, 51, 23],
+	[2, 42, 14, 19, 43, 15],
+
+	// 19
+	[3, 141, 113, 4, 142, 114],
+	[3, 70, 44, 11, 71, 45],
+	[17, 47, 21, 4, 48, 22],
+	[9, 39, 13, 16, 40, 14],
+
+	// 20
+	[3, 135, 107, 5, 136, 108],
+	[3, 67, 41, 13, 68, 42],
+	[15, 54, 24, 5, 55, 25],
+	[15, 43, 15, 10, 44, 16],
+
+	// 21
+	[4, 144, 116, 4, 145, 117],
+	[17, 68, 42],
+	[17, 50, 22, 6, 51, 23],
+	[19, 46, 16, 6, 47, 17],
+
+	// 22
+	[2, 139, 111, 7, 140, 112],
+	[17, 74, 46],
+	[7, 54, 24, 16, 55, 25],
+	[34, 37, 13],
+
+	// 23
+	[4, 151, 121, 5, 152, 122],
+	[4, 75, 47, 14, 76, 48],
+	[11, 54, 24, 14, 55, 25],
+	[16, 45, 15, 14, 46, 16],
+
+	// 24
+	[6, 147, 117, 4, 148, 118],
+	[6, 73, 45, 14, 74, 46],
+	[11, 54, 24, 16, 55, 25],
+	[30, 46, 16, 2, 47, 17],
+
+	// 25
+	[8, 132, 106, 4, 133, 107],
+	[8, 75, 47, 13, 76, 48],
+	[7, 54, 24, 22, 55, 25],
+	[22, 45, 15, 13, 46, 16],
+
+	// 26
+	[10, 142, 114, 2, 143, 115],
+	[19, 74, 46, 4, 75, 47],
+	[28, 50, 22, 6, 51, 23],
+	[33, 46, 16, 4, 47, 17],
+
+	// 27
+	[8, 152, 122, 4, 153, 123],
+	[22, 73, 45, 3, 74, 46],
+	[8, 53, 23, 26, 54, 24],
+	[12, 45, 15, 28, 46, 16],
+
+	// 28
+	[3, 147, 117, 10, 148, 118],
+	[3, 73, 45, 23, 74, 46],
+	[4, 54, 24, 31, 55, 25],
+	[11, 45, 15, 31, 46, 16],
+
+	// 29
+	[7, 146, 116, 7, 147, 117],
+	[21, 73, 45, 7, 74, 46],
+	[1, 53, 23, 37, 54, 24],
+	[19, 45, 15, 26, 46, 16],
+
+	// 30
+	[5, 145, 115, 10, 146, 116],
+	[19, 75, 47, 10, 76, 48],
+	[15, 54, 24, 25, 55, 25],
+	[23, 45, 15, 25, 46, 16],
+
+	// 31
+	[13, 145, 115, 3, 146, 116],
+	[2, 74, 46, 29, 75, 47],
+	[42, 54, 24, 1, 55, 25],
+	[23, 45, 15, 28, 46, 16],
+
+	// 32
+	[17, 145, 115],
+	[10, 74, 46, 23, 75, 47],
+	[10, 54, 24, 35, 55, 25],
+	[19, 45, 15, 35, 46, 16],
+
+	// 33
+	[17, 145, 115, 1, 146, 116],
+	[14, 74, 46, 21, 75, 47],
+	[29, 54, 24, 19, 55, 25],
+	[11, 45, 15, 46, 46, 16],
+
+	// 34
+	[13, 145, 115, 6, 146, 116],
+	[14, 74, 46, 23, 75, 47],
+	[44, 54, 24, 7, 55, 25],
+	[59, 46, 16, 1, 47, 17],
+
+	// 35
+	[12, 151, 121, 7, 152, 122],
+	[12, 75, 47, 26, 76, 48],
+	[39, 54, 24, 14, 55, 25],
+	[22, 45, 15, 41, 46, 16],
+
+	// 36
+	[6, 151, 121, 14, 152, 122],
+	[6, 75, 47, 34, 76, 48],
+	[46, 54, 24, 10, 55, 25],
+	[2, 45, 15, 64, 46, 16],
+
+	// 37
+	[17, 152, 122, 4, 153, 123],
+	[29, 74, 46, 14, 75, 47],
+	[49, 54, 24, 10, 55, 25],
+	[24, 45, 15, 46, 46, 16],
+
+	// 38
+	[4, 152, 122, 18, 153, 123],
+	[13, 74, 46, 32, 75, 47],
+	[48, 54, 24, 14, 55, 25],
+	[42, 45, 15, 32, 46, 16],
+
+	// 39
+	[20, 147, 117, 4, 148, 118],
+	[40, 75, 47, 7, 76, 48],
+	[43, 54, 24, 22, 55, 25],
+	[10, 45, 15, 67, 46, 16],
+
+	// 40
+	[19, 148, 118, 6, 149, 119],
+	[18, 75, 47, 31, 76, 48],
+	[34, 54, 24, 34, 55, 25],
+	[20, 45, 15, 61, 46, 16]
+];
+
+QRRSBlock.getRSBlocks = function(typeNumber, errorCorrectLevel) {
+	
+	var rsBlock = QRRSBlock.getRsBlockTable(typeNumber, errorCorrectLevel);
+	
+	if (rsBlock === undefined) {
+		throw new Error("bad rs block @ typeNumber:" + typeNumber + "/errorCorrectLevel:" + errorCorrectLevel);
+	}
+
+	var length = rsBlock.length / 3;
+	
+	var list = [];
+	
+	for (var i = 0; i < length; i++) {
+
+		var count = rsBlock[i * 3 + 0];
+		var totalCount = rsBlock[i * 3 + 1];
+		var dataCount  = rsBlock[i * 3 + 2];
+
+		for (var j = 0; j < count; j++) {
+			list.push(new QRRSBlock(totalCount, dataCount) );	
+		}
+	}
+	
+	return list;
+};
+
+QRRSBlock.getRsBlockTable = function(typeNumber, errorCorrectLevel) {
+
+	switch(errorCorrectLevel) {
+	case QRErrorCorrectLevel.L :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+	case QRErrorCorrectLevel.M :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+	case QRErrorCorrectLevel.Q :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+	case QRErrorCorrectLevel.H :
+		return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+	default :
+		return undefined;
+	}
+};
+
+module.exports = QRRSBlock;
+
+};
+return {QRCode:req('index'),EC:req('QRErrorCorrectLevel')};})();
+function qrSVG(text){
+  const q=new QRLib.QRCode(-1,QRLib.EC.M); q.addData(text); q.make();
+  const n=q.getModuleCount(), m=2; let d='';
+  for(let r=0;r<n;r++) for(let c=0;c<n;c++) if(q.isDark(r,c)) d+=`M${c+m} ${r+m}h1v1h-1z`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${n+m*2} ${n+m*2}" shape-rendering="crispEdges"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#24213f"/></svg>`;
+}
+
+/* ---------------- 주제 카드 ---------------- */
+const TOPICS = [
+ '빨간색인 것','노란색인 것','초록색인 것','하얀색인 것','검은색인 것','둥근 것','네모난 것','뾰족한 것','반짝이는 것','말랑말랑한 것',
+ '차가운 것','뜨거운 것','무거운 것','아주 작은 것','아주 큰 것','시끄러운 것','냄새가 좋은 것','냄새가 고약한 것','끈적끈적한 것','바퀴가 달린 것',
+ '과일','채소','편의점 간식','분식집 메뉴','김밥 재료','라면에 넣는 것','급식에 나오면 좋은 반찬','아이스크림 맛','생일 파티 음식','치킨과 어울리는 것',
+ '빵집에 있는 빵','냉장고 안에 있는 것','아침밥 메뉴','소풍 도시락 메뉴','피자 토핑','매운 음식','달콤한 간식','마시는 것','중국집 메뉴','명절 음식',
+ '동물원 동물','바다에 사는 생물','곤충','날개가 있는 것','털이 많은 동물','다리가 4개인 동물','반려동물','농장 동물','물고기 이름','공룡이 떠오르는 말',
+ '교실에 있는 물건','필통 속 물건','가방에 들어 있는 것','학교에 있는 장소','교과목','체육 시간에 하는 것','쉬는 시간에 하는 것','운동장에 있는 것','선생님이 자주 하는 말','방학 숙제',
+ '주방에 있는 물건','화장실에 있는 것','거실에 있는 것','침대 위에 있는 것','문구점에서 파는 것','마트에서 사는 것','캠핑 준비물','여행 가방에 넣는 것','비 오는 날 필요한 것','겨울에 입는 것',
+ '여름 하면 떠오르는 것','겨울 하면 떠오르는 것','봄 하면 떠오르는 것','가을 하면 떠오르는 것','크리스마스 하면 떠오르는 것','생일에 받고 싶은 선물','놀이공원 놀이기구','바닷가에서 하는 것','눈 오는 날 하는 것','밤하늘에 있는 것',
+ '운동 종목','공으로 하는 운동','악기','탈것','하늘을 나는 것','직업','병원에 있는 것','소방관이 쓰는 것','경찰서에 있는 것','우주에 있는 것',
+ '나라 이름','우리나라 도시','유명한 산','세계 유명 건축물','전래 동화','동화 속 등장인물','슈퍼히어로가 가진 능력','무서운 것','귀여운 것','기분이 좋아지는 것',
+ '감정을 나타내는 말','날씨를 나타내는 말','칭찬하는 말','아침에 하는 일','잠들기 전에 하는 일','집안일','주말에 하고 싶은 것','어른이 되면 하고 싶은 것','보드게임 이름','놀이터 놀이',
+ '꽃 이름','나무 이름','정글에 있는 것','사막에 있는 것','남극에 있는 것','손으로 하는 것','발로 하는 것','물에 뜨는 것','전기가 필요한 것','종이로 만든 것',
+ '스마트폰 앱 이름','유튜브에서 보는 것','과학실에 있는 것','미술 시간 준비물','음악 시간에 하는 것','도서관에 있는 것','역사 속 인물','한국을 대표하는 것','세계 여러 나라의 음식','5글자 이상인 동물'
+];
+
+/* ---------------- DB 어댑터 (Firebase / 로컬 테스트) ---------------- */
+const DB = (()=>{
+  let mode = 'mock', fdb = null, offset = 0;
+  let tree = {}; const listeners = []; let bc = null;
+  const P = p => p.split('/').filter(Boolean);
+  function getAt(parts){ let o=tree; for(const k of parts){ if(o==null||typeof o!=='object') return null; o=o[k]; } return o===undefined?null:o; }
+  function clean(v){
+    if(v===null||v===undefined) return undefined;
+    if(Array.isArray(v)) return v.map(x=>{const c=clean(x);return c===undefined?null:c;});
+    if(typeof v!=='object') return v;
+    const out={}; let any=false;
+    for(const k in v){ const c=clean(v[k]); if(c!==undefined){out[k]=c;any=true;} }
+    return any?out:undefined;
+  }
+  function applyOne(parts,val){
+    val = clean(val);
+    if(!parts.length){ tree = val||{}; return; }
+    const stack=[]; let o=tree;
+    for(let i=0;i<parts.length-1;i++){ const k=parts[i]; if(o[k]==null||typeof o[k]!=='object'){ if(val===undefined) return; o[k]={}; } stack.push([o,k]); o=o[k]; }
+    const last=parts[parts.length-1];
+    if(val===undefined) delete o[last]; else o[last]=val;
+    for(let i=stack.length-1;i>=0;i--){ const [po,k]=stack[i]; if(po[k]&&typeof po[k]==='object'&&!Array.isArray(po[k])&&Object.keys(po[k]).length===0) delete po[k]; }
+  }
+  function persist(){ try{ localStorage.setItem('jinxo_mock_db', JSON.stringify(tree)); }catch(e){} }
+  function notify(){
+    for(const l of listeners){ const v=getAt(l.parts); const s=JSON.stringify(v); if(s!==l.last){ l.last=s; try{ l.cb(v==null?null:JSON.parse(s)); }catch(e){ console.error(e); } } }
+  }
+  function mockWrite(ops){ ops.forEach(([p,v])=>applyOne(P(p),v)); persist(); if(bc) bc.postMessage(ops); notify(); return Promise.resolve(); }
+  function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+  return {
+    get mode(){ return mode; },
+    async init(){
+      const forceLocal = /[?&]local=1/.test(location.search);
+      if(FIREBASE_CONFIG.databaseURL && !forceLocal){
+        await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');
+        await loadScript('https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js');
+        firebase.initializeApp(FIREBASE_CONFIG); fdb = firebase.database(); mode='fb';
+        fdb.ref('.info/serverTimeOffset').on('value', s=>{ offset = s.val()||0; });
+      } else {
+        mode='mock';
+        try{ tree = JSON.parse(localStorage.getItem('jinxo_mock_db')||'{}')||{}; }catch(e){ tree={}; }
+        bc = new BroadcastChannel('jinxo_mock');
+        bc.onmessage = e => { e.data.forEach(([p,v])=>applyOne(P(p),v)); notify(); };
+      }
+    },
+    now(){ return Date.now()+offset; },
+    set(path,val){ if(mode==='fb') return fdb.ref(path).set(val===undefined?null:val); return mockWrite([[path,val]]); },
+    update(path,obj){ if(mode==='fb') return fdb.ref(path).update(obj); return mockWrite(Object.keys(obj).map(k=>[path+'/'+k,obj[k]])); },
+    remove(path){ return this.set(path,null); },
+    get(path){ if(mode==='fb') return fdb.ref(path).once('value').then(s=>s.val()); const v=getAt(P(path)); return Promise.resolve(v==null?null:JSON.parse(JSON.stringify(v))); },
+    on(path,cb){
+      if(mode==='fb'){ const ref=fdb.ref(path); const h=s=>cb(s.val()); ref.on('value',h); return ()=>ref.off('value',h); }
+      const l={parts:P(path),cb,last:undefined}; listeners.push(l); notify(); return ()=>{ const i=listeners.indexOf(l); if(i>=0) listeners.splice(i,1); };
+    },
+    presence(path){ // path 에 true 를 두고, 연결이 끊기면 지움. 멈추는 함수를 돌려줌
+      if(mode==='fb'){
+        const ref=fdb.ref(path), con=fdb.ref('.info/connected');
+        const h=s=>{ if(s.val()){ ref.onDisconnect().remove(); ref.set(true); } };
+        con.on('value',h);
+        return ()=>{ con.off('value',h); ref.onDisconnect().cancel(); ref.remove(); };
+      }
+      this.set(path,true); const h=()=>this.remove(path); addEventListener('pagehide',h);
+      return ()=>{ removeEventListener('pagehide',h); this.remove(path); };
+    }
+  };
+})();
+
+/* ---------------- 유틸 ---------------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s||'').normalize('NFC').toLowerCase().replace(/[\s.,!?~\-_'"·‧()\[\]{}:;]/g,'');
+const rid = () => Math.random().toString(36).slice(2,10);
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8]];
+const NUM = ['①','②','③'];
+const PALETTE=['#2f80ed','#f2711c','#eb3b5a','#20bf6b','#8854d0','#0fb9b1','#e84393'];
+function pcolor(pid){ let h=0; for(const ch of String(pid)) h=(h*31+ch.charCodeAt(0))>>>0; return PALETTE[h%PALETTE.length]; }
+const rand = n => Math.floor(Math.random()*n);
+function hashName(s){ let h=5381; for(const ch of s) h=((h<<5)+h+ch.codePointAt(0))>>>0; return 'p'+h.toString(36)+s.length; }
+function toast(msg,ms=1800){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),ms); }
+function setHTML(el,html){ if(!el) return; if(el._h!==html){ el._h=html; el.innerHTML=html; } }
+function secLeft(dl){ return Math.max(0,Math.ceil((dl-DB.now())/1000)); }
+function cdSpan(dl,cls='cd'){ return `<span class="${cls}" data-dl="${dl}">${secLeft(dl)}</span>`; }
+setInterval(()=>{ document.querySelectorAll('[data-dl]').forEach(e=>{ const v=secLeft(+e.dataset.dl); if(e.textContent!=String(v)) e.textContent=v; }); },250);
+function josa(name,a,b){ const c=name.charCodeAt(name.length-1); if(c<0xAC00||c>0xD7A3) return name+a; return name+(((c-0xAC00)%28)?a:b); } // a:받침있음 b:없음
+const roomPath = code => `${DB_ROOT}/${code}`;
+
+/* ---------------- 공통 계산 ---------------- */
+const S = { role:null, code:null, pid:null, name:null, R:null, off:null, hostSid:null, ui:{} };
+function settings(){ return Object.assign(defaultSettings(), S.R?.meta?.settings||{}); }
+function defaultSettings(){ return {rounds:3, writeSec:90, turnSec:30, claimSec:15, voteSec:15, custom:'', useBase:true, autoNext:true, autoSec:15}; }
+function cellsOf(pid,round){ return S.R?.boards?.[pid]?.['r'+round] || {}; }
+function filledCount(cells){ let n=0; for(let i=0;i<9;i++) if(cells['c'+i]?.t) n++; return n; }
+function unmarked(cells){ const a=[]; for(let i=0;i<9;i++){ const x=cells['c'+i]; if(x?.t && !x.m) a.push(i); } return a; }
+function topicCount(cells,tp){ let n=0; for(let i=0;i<9;i++) if(cells['c'+i]?.t && cells['c'+i].tp===tp) n++; return n; }
+const LINE_B=[3,2,1,1,2,3]; // 가로(위→아래) 3·2·1, 세로(왼→오) 1·2·3 — 원작 보드
+function calcScore(cells){
+  cells=cells||{}; let o=0,s=0,l=0; const M=i=>cells['c'+i]?.m==='o';
+  for(let i=0;i<9;i++){ if(M(i)) o++; if(cells['c'+i]?.s) s++; }
+  LINES.forEach((L,k)=>{ if(L.every(M)) l+=LINE_B[k]; });
+  return {o,s,l,total:o+s*2+l};
+}
+function players(){ return S.R?.players||{}; }
+function pname(pid){ return players()[pid]?.name || '?'; }
+function isOnline(pid){ const p=players()[pid]; return !!(p && p.conn && Object.keys(p.conn).length); }
+function sortedPids(onlyOnline){ return Object.keys(players()).filter(p=>players()[p]?.name && (!onlyOnline||isOnline(p))).sort((a,b)=>(players()[a].joinedAt||0)-(players()[b].joinedAt||0)); }
+function totalScore(pid){
+  const st=S.R?.state||{}; const sc=S.R?.scores?.[pid]||{}; let t=0;
+  for(const k in sc) t+= +sc[k]||0;
+  if(st.round && !sc['r'+st.round] && ['turn','claim','vote','result','write','topic'].includes(st.phase)) t+=calcScore(cellsOf(pid,st.round)).total;
+  return t;
+}
+function deck(){ const s=settings(); const custom=(s.custom||'').split('\n').map(x=>x.trim()).filter(Boolean); return (s.useBase!==false?TOPICS:[]).concat(custom); }
+function rosterOf(round){ return sortedPids(false).filter(p=>filledCount(cellsOf(p,round))>0); }
+
+/* ---------------- 보드 그리기 ---------------- */
+function boardHTML(cells,o={}){
+  cells=cells||{}; const M=i=>cells['c'+i]?.m==='o';
+  let h=`<div class="board ${o.mini?'mini':''} ${o.calm?'calm':''}" style="--fr:${o.color||'#2f80ed'}">`;
+  for(let r=0;r<3;r++){
+    for(let c=0;c<3;c++){
+      const i=r*3+c, x=cells['c'+i]; const cls=['cell'];
+      let inner='';
+      if(x?.t){
+        cls.push('tp'+(x.tp||0)); const L=[...x.t].length; if(L>9) cls.push('l3'); else if(L>5) cls.push('l2');
+        if(x.m==='o') cls.push('m-o'); if(x.m==='x') cls.push('m-x'); if(x.s) cls.push('star-on');
+        inner=`<span class="tag">${(x.tp||0)+1}</span>${esc(x.t)}`;
+      } else { cls.push('empty'); inner = o.mini?'':'＋'; }
+      inner+=`<span class="star">★</span>`;
+      if(o.click && o.click.includes(i)) cls.push('click');
+      if(o.sel===i) cls.push('sel');
+      if(o.hl===i) cls.push('hl');
+      const on = (o.click && o.click.includes(i) && o.onclick) ? ` onclick="${o.onclick}(${i})"` : '';
+      h+=`<div class="${cls.join(' ')}"${on}>${inner}</div>`;
+    }
+    h+=`<div class="bonus ${[0,1,2].every(c=>M(r*3+c))?'on':''}"><span>${LINE_B[r]}</span></div>`;
+  }
+  for(let c=0;c<3;c++) h+=`<div class="bonus ${[0,1,2].every(r=>M(r*3+c))?'on':''}"><span>${LINE_B[3+c]}</span></div>`;
+  return h+`<div></div></div>`;
+}
+
+/* =========================================================
+   홈
+   ========================================================= */
+function leaveRoom(){ if(S.off){ S.off(); S.off=null; } if(S.pres){ S.pres(); S.pres=null; } }
+function renderHome(msg){
+  S.role=null; leaveRoom();
+  const q=new URLSearchParams(location.search); const qc=q.get('room')||'';
+  const last=JSON.parse(localStorage.getItem('jinxo_me')||'null');
+  const lastHost=JSON.parse(localStorage.getItem('jinxo_host')||'null');
+  $('#app').innerHTML=`
+  <div class="home">
+    <div class="logo"><span class="j">징크스</span><span class="o">O</span></div>
+    <div class="tag">너랑 나랑만!</div><div class="sub">친구와 <b>같은 답</b>을 쓰면 점수! 딱 한 명과 같으면 <b>징크스!</b> ★</div>
+    ${msg?`<div class="banner" style="background:var(--pink)">${esc(msg)}</div>`:''}
+    <div class="card">
+      <h3>🙋 학생: 방 들어가기</h3>
+      <input id="jcode" inputmode="numeric" maxlength="4" placeholder="방 코드 4자리" value="${esc(qc||last?.code||'')}">
+      <input id="jname" maxlength="8" placeholder="이름 (8자까지)" value="${esc(last?.name||'')}">
+      <button onclick="A.join()">들어가기</button>
+      ${last && (!qc || qc===last.code) ?`<button class="teal" style="margin-top:10px" onclick="A.rejoin()">🔄 ${esc(last.name)}(으)로 방 ${esc(last.code)} 다시 들어가기</button>`:''}
+      <div class="small muted" style="margin-top:8px;font-size:14px">튕겼으면 <b>같은 이름</b>으로 들어오면 내 보드와 점수가 그대로 있어요.</div>
+    </div>
+    <div class="card">
+      <h3>🧑‍🏫 선생님: 방 만들기</h3>
+      <button class="pink" onclick="A.createRoom()">새 방 만들기</button>
+      ${lastHost?`<button class="ghost" style="margin-top:10px" onclick="A.resumeHost()">방 ${esc(lastHost.code)} 이어서 진행하기</button>`:''}
+    </div>
+    <div class="card" style="font-size:15px;line-height:1.6">
+      <h3>📖 규칙 한눈에</h3>
+      ① 주제 카드(주제 2개 중 하나 고르기)로 주제 3개를 정해요. 주제마다 답을 <b>3개</b>씩 빈 칸에 써요. (2단어 이하, 내 보드에 같은 답 금지)<br>
+      ② 돌아가며 내 답 하나를 불러요.<br>
+      &nbsp;· 여러 명과 같으면 ⭕ <b>1점</b><br>
+      &nbsp;· 딱 <b>한 명</b>과 같으면 <b>징크스!</b> ⭕+★ <b>3점</b><br>
+      &nbsp;· 아무도 없으면 ✗ 0점<br>
+      ③ 가로·세로 한 줄이 모두 ⭕이면 <b>줄 보너스</b> (가로 3·2·1점, 세로 1·2·3점)<br>
+      ④ 누군가 더 표시할 답이 없으면 <b>종료!</b> 다음 라운드는 점수가 가장 낮은 사람부터. 3라운드 합계로 승부!
+    </div>
+  </div>`;
+  if(qc) setTimeout(()=>$('#jname')?.focus(),50);
+  $('#jname')?.addEventListener('keydown',e=>{ if(e.key==='Enter') A.join(); });
+}
+
+/* =========================================================
+   학생
+   ========================================================= */
+const A = {};
+A.rejoin = () => { const last=JSON.parse(localStorage.getItem('jinxo_me')||'null'); if(!last) return; $('#jcode').value=last.code; $('#jname').value=last.name; A.join(); };
+A.join = async ()=>{
+  const code=($('#jcode').value||'').trim(); const name=($('#jname').value||'').trim().replace(/\s+/g,' ');
+  if(!/^\d{4}$/.test(code)) return toast('방 코드 4자리를 확인해요');
+  if(!name) return toast('이름을 써 주세요');
+  const meta=await DB.get(roomPath(code)+'/meta');
+  if(!meta) return toast('그런 방이 없어요');
+  const pid=hashName(name);
+  const p=await DB.get(roomPath(code)+'/players/'+pid);
+  const back = !!p?.name;           // 같은 이름으로 이미 있던 학생 → 재접속
+  const sid=rid();
+  await DB.update(roomPath(code)+'/players/'+pid, {name, joinedAt:p?.joinedAt||DB.now(), sid});
+  localStorage.setItem('jinxo_me', JSON.stringify({code,name}));
+  leaveRoom();
+  S.role='stu'; S.code=code; S.pid=pid; S.name=name; S.sid=sid; S.ui={};
+  S.pres=DB.presence(roomPath(code)+'/players/'+pid+'/conn/'+sid);
+  history.replaceState(null,'',location.pathname+'?room='+code+(DB.mode==='mock'&&/local=1/.test(location.search)?'&local=1':''));
+  $('#app').innerHTML=`<div class="stu"><div class="top" id="s-top"></div><div id="s-banner"></div><div id="s-board"></div><div id="s-act"></div></div>`;
+  if(back) setTimeout(()=>toast(`다시 왔어요, ${name}! 하던 그대로 이어서 해요 🙌`,2600),200);
+  let seen=false;
+  S.off=DB.on(roomPath(code), R=>{
+    if(!R){ renderHome('방이 사라졌어요'); return; }
+    S.R=R; const me=R.players?.[pid];
+    if(me?.name) seen=true;
+    else if(seen){ renderHome('선생님이 방에서 내보냈어요'); return; }
+    if(me?.sid && me.sid!==S.sid){ renderHome('같은 이름으로 다른 화면에서 들어와서, 이 화면은 나갔어요'); return; }
+    renderStu();
+  });
+};
+function req(obj){ return DB.set(roomPath(S.code)+'/req/'+S.pid, Object.assign({ts:DB.now()},obj)); }
+
+function renderStu(){
+  const R=S.R, st=R.state||{}, me=S.pid, s=settings();
+  const round=st.round||0; const cells=cellsOf(me,round);
+  const inRound = ['turn','claim','vote','result'].includes(st.phase) ? (st.order||[]).includes(me) : true;
+  setHTML($('#s-top'), `<span class="me">🙂 ${esc(S.name)}</span><span><span class="pill">방 ${esc(S.code)}</span> <span class="pill y">${totalScore(me)}점</span></span>`);
+  let ban='', act='', bopt={};
+  const ph=st.phase;
+  if(ph==='lobby'){
+    ban=`<div class="banner"><div class="big">입장 완료! 🎉</div><div class="small">선생님이 시작할 때까지 기다려요 · 지금 ${sortedPids(true).length}명</div></div>`;
+  } else if(ph==='topic'){
+    const tp=st.tIdx;
+    if(st.picker===me){
+      ban=`<div class="banner"><div class="mid">라운드 ${round} · 주제 ${tp+1}/3</div><div class="big">주제를 골라 주세요! ${cdSpan(st.deadline)}</div>
+        <div class="cands">${(st.cands||[]).map((c,i)=>`<button class="teal" onclick="A.pick(${i})">${esc(c)}</button>`).join('')}</div></div>`;
+    } else ban=`<div class="banner"><div class="mid">라운드 ${round} · 주제 ${tp+1}/3</div><div class="big">${esc(pname(st.picker))}의 주제 고르기… ${cdSpan(st.deadline)}</div></div>`;
+  } else if(ph==='write'){
+    const tp=st.tIdx, n=topicCount(cells,tp);
+    const behind=[0,1,2].filter(t=>t<tp && topicCount(cells,t)<3);
+    ban=`<div class="banner"><div class="small">라운드 ${round} · 주제 ${tp+1}/3 · 남은 시간 ${cdSpan(st.deadline)}초</div>
+      <div class="topicbox t${tp}">${esc(st.topics?.['t'+tp]||'')}</div>
+      <div class="mid">${n>=3?'✅ 3개 다 썼어요!':`빈 칸을 눌러 답을 써요 (${n}/3)`}</div>${n>=3?pendingHTML(false):''}
+      ${behind.length?`<div class="small">놓친 주제 ${behind.map(t=>NUM[t]).join(' ')} 도 빈 칸에 쓸 수 있어요</div>`:''}
+      <div class="small">💡 한 줄을 모두 ⭕로 만들면 옆에 적힌 보너스 점수!</div></div>`;
+    const click=[]; for(let i=0;i<9;i++){ const x=cells['c'+i]; if(!x?.t || (x.tp<=tp)) click.push(i); }
+    bopt={click,onclick:'A.cell',calm:true};
+  } else if(ph==='turn'){
+    if(!inRound) ban=specBanner();
+    else if(st.order[st.turn]===me){
+      ban=`<div class="banner" style="background:var(--pink)"><div class="big">🎤 내 차례!</div><div class="mid">부를 답을 눌러요 · ${cdSpan(st.deadline)}초</div></div>`;
+      bopt={click:unmarked(cells),onclick:'A.callCell'};
+    } else ban=`<div class="banner"><div class="big">🎤 ${esc(pname(st.order[st.turn]))}의 차례</div><div class="small">친구가 부르는 답을 잘 들어요 · ${cdSpan(st.deadline)}초</div></div>`;
+  } else if(ph==='claim'){
+    const c=st.call||{}; const auto=st.auto||{}; const myClaim=R.claims?.['n'+st.callNo]?.[me];
+    let line='';
+    if(c.pid===me) line=`<div class="mid">친구들이 확인하고 있어요…</div>`;
+    else if(auto[me]!=null){ line=`<div class="mid">✨ 내 답과 똑같아요! 자동으로 인정돼요</div>`; bopt={hl:auto[me]}; }
+    else if(!inRound) line=`<div class="small">구경 중이에요</div>`;
+    else if(myClaim && myClaim!=='-'){ const ci=+myClaim.slice(1); line=`<div class="mid">‘${esc(cells['c'+ci]?.t)}’ 비슷하다고 신청했어요</div>`; act=`<button class="ghost" onclick="A.claim(null)">신청 취소</button>`; bopt={sel:ci}; }
+    else if(myClaim==='-') { line=`<div class="mid">‘없어요’를 눌렀어요</div>`; act=`<button class="ghost" onclick="A.claim(null)">다시 고르기</button>`; }
+    else if(unmarked(cells).length){ line=`<div class="mid">뜻이 같은 답이 있으면 그 칸을 눌러요</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ (큰 묶음과 그 안의 것은 달라요)<br>친구들이 투표로 정해요</div>`; bopt={click:unmarked(cells),onclick:'A.claimCell'}; act=`<button class="ghost" onclick="A.claim('-')">비슷한 답 없어요</button>`; }
+    ban=`<div class="banner"><div class="small">${esc(pname(c.pid))}의 답 · ${cdSpan(st.deadline)}초</div><div class="called">${esc(c.t)}</div>${line}</div>`;
+  } else if(ph==='vote'){
+    const c=st.call||{}; const cl=st.claims||{}; const V=R.votes?.['n'+st.callNo]||{};
+    let items='';
+    for(const p in cl){
+      if(p===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>내 신청 — 친구들이 투표 중</small></div></div>`; continue; }
+      if(c.pid===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div></div>`; continue; }
+      const v=V[p]?.[me];
+      items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div><div class="row">
+        <button class="teal sm ${v===1?'on':''}" onclick="A.vote('${p}',1)">👍 같아요</button><button class="pink sm ${v===0?'on':''}" onclick="A.vote('${p}',0)">👎 달라요</button></div></div>`;
+    }
+    ban=`<div class="banner"><div class="small">투표 · ${cdSpan(st.deadline)}초</div><div class="called">${esc(c.t)}</div><div class="mid">이 답과 같은 뜻일까요?</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ · 너무 엄격하진 않게!</div>${items}</div>`;
+    if(st.auto?.[me]!=null) bopt={hl:st.auto[me]};
+  } else if(ph==='result'){
+    ban=resultBanner(st.result,me);
+  } else if(ph==='roundEnd'||ph==='gameEnd'){
+    const sc=calcScore(cells);
+    const ranks=sortedPids(false).map(p=>({p,t:totalScore(p)})).sort((a,b)=>b.t-a.t);
+    const myRank=ranks.findIndex(x=>x.p===me)+1;
+    ban=`<div class="banner"><div class="big">${ph==='gameEnd'?'🏆 게임 끝!':`라운드 ${round} 끝!`}</div>
+      ${st.finisher?`<div class="small">${esc(pname(st.finisher))}의 보드가 다 찼어요</div>`:''}
+      <div class="breakdown"><span>⭕ ${sc.o}</span><span>★ ${sc.s}×2</span><span>줄 +${sc.l}</span><span style="color:var(--yellow)">= ${sc.total}점</span></div>
+      <div class="mid" style="margin-top:8px">합계 ${totalScore(me)}점 · ${rankOf(me)}등 / ${ranks.length}명</div>
+      ${ph==='roundEnd'&&st.deadline?`<div class="small">⏩ ${cdSpan(st.deadline)}초 뒤 ${round>=s.rounds?'최종 결과':'다음 라운드'}</div>`:''}</div>`;
+  }
+  if((ph==='claim'||ph==='vote') && !pendingInfo().list.includes(me)) ban=ban.replace(/<\/div>$/, pendingHTML(false)+'</div>');
+  setHTML($('#s-banner'),ban);
+  bopt.color=pcolor(me);
+  const sc0=calcScore(cells);
+  setHTML($('#s-board'), (ph==='lobby')?'':boardHTML(cells,bopt)+`<div class="scorestrip"><span>⭕×1 <b>${sc0.o}</b></span><span>★×2 <b>${sc0.s*2}</b></span><span>보너스 <b>${sc0.l}</b></span><span class="tot">이번 라운드 <b>${sc0.total}</b>점</span></div>`);
+  setHTML($('#s-act'), (act?`<div class="actions">${act}</div>`:'') + (ph!=='lobby'?rankBox(me):''));
+  if(ph!==S.ui.lastPh){ S.ui.lastPh=ph; if(ph!=='write') hideSheet(); if(ph==='claim'||ph==='turn') S.ui.callSel=null; }
+}
+function specBanner(){ return `<div class="banner"><div class="mid">이번 라운드는 구경해요 👀</div><div class="small">다음 라운드부터 함께해요! (투표는 할 수 있어요)</div></div>`; }
+function resultBanner(r,me){
+  if(!r) return '';
+  const mine = r.who?.includes(me) || r.caller===me;
+  if(r.type==='jinx') return `<div class="banner" style="background:var(--pink)"><div class="big">★ 징크스! ★</div><div class="called">${esc(r.t)}</div><div class="mid">${esc(pname(r.caller))} & ${esc(pname(r.who[0]))}</div>${mine?'<div class="mid">⭕+★ 3점!</div>':''}</div>`;
+  if(r.type==='match') return `<div class="banner" style="background:var(--teal)"><div class="big">⭕ ${r.who.length+1}명 일치!</div><div class="called">${esc(r.t)}</div>${mine?'<div class="mid">⭕ 1점!</div>':''}<div class="small">${r.who.concat([r.caller]).map(pname).map(esc).join(', ')}</div></div>`;
+  return `<div class="banner"><div class="big">✗ 아무도 없어요</div><div class="called">${esc(r.t)}</div><div class="small">${esc(pname(r.caller))}의 답에 ✗</div></div>`;
+}
+A.pick = i => req({type:'pick',i});
+A.cell = i => openWrite(i);
+A.callCell = i => {
+  const x=cellsOf(S.pid,S.R.state.round)['c'+i];
+  showSheet(`<h3>이 답을 부를까요?</h3><div class="center"><div class="called">${esc(x.t)}</div></div>
+    <div class="actions"><button class="ghost" onclick="hideSheet()">취소</button><button class="pink" onclick="A.doCall(${i})">🎤 부르기!</button></div>`);
+};
+A.doCall = i => { hideSheet(); req({type:'call',c:'c'+i}); };
+A.claimCell = i => {
+  const x=cellsOf(S.pid,S.R.state.round)['c'+i];
+  showSheet(`<h3>비슷하다고 신청할까요?</h3><div class="center"><div class="called" style="font-size:24px">${esc(S.R.state.call?.t)}</div> ≈ <div class="called" style="font-size:24px">${esc(x.t)}</div></div>
+    <div class="small center muted">친구들이 투표로 같은지 정해요</div>
+    <div class="actions"><button class="ghost" onclick="hideSheet()">취소</button><button class="teal" onclick="hideSheet();A.claim('c${i}')">신청하기</button></div>`);
+};
+A.claim = v => DB.set(roomPath(S.code)+`/claims/n${S.R.state.callNo}/${S.pid}`, v);
+A.vote = (p,v) => DB.set(roomPath(S.code)+`/votes/n${S.R.state.callNo}/${p}/${S.pid}`, v);
+
+function openWrite(i){
+  const st=S.R.state, round=st.round, cells=cellsOf(S.pid,round), x=cells['c'+i];
+  const tps=[0,1,2].filter(t=>t<=st.tIdx);
+  let tp = x?.t ? x.tp : (topicCount(cells,st.tIdx)<3 ? st.tIdx : (tps.find(t=>topicCount(cells,t)<3) ?? st.tIdx));
+  S.ui.wr={i,tp};
+  const chips = tps.map(t=>{ const full=topicCount(cells,t)>=3 && !(x?.t && x.tp===t); return `<button class="t${t} ${t===tp?'':'off'}" ${full?'disabled':''} onclick="A.wtp(${t})">${t+1}. ${esc(st.topics?.['t'+t])} (${topicCount(cells,t)}/3)</button>`; }).join('');
+  showSheet(`<h3>${x?.t?'답 고치기':'답 쓰기'}</h3><div class="chips">${chips}</div>
+    <input id="ans" maxlength="16" placeholder="2단어 이하로 써요" value="${esc(x?.t||'')}" autocomplete="off">
+    <div class="warn" id="warn"></div>
+    <div class="actions">${x?.t?`<button class="ghost" onclick="A.wdel()">지우기</button>`:''}<button class="ghost" onclick="hideSheet()">취소</button><button onclick="A.wsave()">✏️ 쓰기</button></div>`);
+  const inp=$('#ans'); inp.focus(); inp.addEventListener('keydown',e=>{ if(e.key==='Enter') A.wsave(); });
+}
+A.wtp = t => { S.ui.wr.tp=t; document.querySelectorAll('#sheet .chips button').forEach((b,k)=>b.classList.toggle('off',k!==t)); };
+A.wsave = (force) => {
+  const st=S.R.state; if(st.phase!=='write'){ hideSheet(); return; }
+  const {i,tp}=S.ui.wr; const v=($('#ans').value||'').trim().replace(/\s+/g,' ');
+  const cells=cellsOf(S.pid,st.round);
+  if(!v) return $('#warn').textContent='답을 써 주세요';
+  for(let k=0;k<9;k++){ if(k!==i && cells['c'+k]?.t && norm(cells['c'+k].t)===norm(v)) return $('#warn').textContent='내 보드에 이미 같은 답이 있어요'; }
+  const x=cells['c'+i];
+  if(topicCount(cells,tp) >= 3 && !(x?.t && x.tp===tp)) return $('#warn').textContent='이 주제는 벌써 3개를 썼어요';
+  if(v.split(' ').length>2 && force!==true){ $('#warn').innerHTML='2단어까지만 써요! (사람·장소 이름은 괜찮아요) <button class="sm pink" onclick="A.wsave(true)">이름이라 그대로 쓰기</button>'; return; }
+  DB.set(roomPath(S.code)+`/boards/${S.pid}/r${st.round}/c${i}`, {t:v,tp});
+  hideSheet();
+};
+A.wdel = () => { const st=S.R.state; DB.remove(roomPath(S.code)+`/boards/${S.pid}/r${st.round}/c${S.ui.wr.i}`); hideSheet(); };
+function showSheet(html){ const s=$('#sheet'); s.innerHTML=`<div class="in">${html}</div>`; s.classList.remove('hidden'); s.onclick=e=>{ if(e.target===s) hideSheet(); }; }
+function hideSheet(){ $('#sheet').classList.add('hidden'); $('#sheet').innerHTML=''; }
+
+/* =========================================================
+   선생님 (진행 + 전자칠판 화면)
+   ========================================================= */
+A.createRoom = async ()=>{
+  let code=null;
+  for(let k=0;k<30;k++){ const c=String(1000+rand(9000)); const m=await DB.get(roomPath(c)+'/meta'); if(!m || DB.now()-(m.created||0)>12*3600e3){ code=c; break; } }
+  if(!code) return toast('방 코드를 만들지 못했어요. 다시 눌러 주세요');
+  const sid=rid();
+  await DB.set(roomPath(code), {meta:{created:DB.now(), hostSid:sid, settings:defaultSettings()}, state:{phase:'lobby',round:0}});
+  localStorage.setItem('jinxo_host', JSON.stringify({code,sid}));
+  enterHost(code,sid);
+};
+A.resumeHost = async ()=>{
+  const h=JSON.parse(localStorage.getItem('jinxo_host')||'null'); if(!h) return;
+  const m=await DB.get(roomPath(h.code)+'/meta'); if(!m){ localStorage.removeItem('jinxo_host'); return renderHome('그 방은 없어졌어요'); }
+  enterHost(h.code,h.sid);
+};
+function enterHost(code,sid){
+  S.role='host'; S.code=code; S.hostSid=sid; S.ui={boards:false};
+  $('#app').innerHTML=`<div class="host">
+    <div class="hd"><div class="logo"><span class="j">징크스</span><span class="o">O</span></div><div id="h-info" class="mid"></div><div class="code" onclick="A.qrBig()" style="cursor:pointer" title="QR 크게 보기">📱 방 코드<b>${code}</b></div></div>
+    <div class="stage" id="h-stage"></div>
+    <div class="side" id="h-side"></div>
+    <div class="ctrl" id="h-ctrl"></div>
+  </div><div id="h-over"></div>`;
+  S.off=DB.on(roomPath(code), R=>{ if(!R){ localStorage.removeItem('jinxo_host'); renderHome('방이 없어졌어요'); return; } S.R=R; renderHost(); hostStep(); });
+}
+const isActiveHost = () => S.role==='host' && S.R?.meta?.hostSid===S.hostSid;
+A.takeover = () => DB.set(roomPath(S.code)+'/meta/hostSid', S.hostSid);
+setInterval(()=>{ if(S.role==='host' && S.R) hostStep(); },400);
+setInterval(()=>{ if(S.role==='host' && S.R) renderHost(); },1000);
+
+function joinURL(){ return location.origin+location.pathname+'?room='+S.code+(/local=1/.test(location.search)?'&local=1':''); }
+
+function renderHost(){
+  const R=S.R, st=R.state||{}, s=settings(), ph=st.phase;
+  setHTML($('#h-over'), isActiveHost()?'':`<div class="overlay"><div class="big">다른 화면에서 진행 중이에요</div><button class="pink" onclick="A.takeover()">이 화면에서 진행하기</button><button class="ghost" onclick="renderHome()">처음으로</button></div>`);
+  setHTML($('#h-info'), st.round?`라운드 <span style="color:var(--yellow)">${st.round}</span> / ${s.rounds}`:'');
+  let stage='', ctrl='';
+  if(ph==='lobby'){
+    const n=sortedPids(true).length;
+    stage=`<div class="lobby">
+        <div class="qrcard" onclick="A.qrBig()">${qrSVG(joinURL())}<div class="qrhint">🔍 눌러서 크게 보기</div></div>
+        <div class="lobinfo">
+          <div class="big">QR을 찍거나<br>방 코드를 입력해요</div>
+          <div class="bigcode">${S.code}</div>
+          <div class="url">${esc(joinURL())}</div>
+          <button class="teal" onclick="A.qrBig()">📱 QR 크게 보기</button>
+        </div>
+      </div>
+      <div class="mid" style="margin-top:18px">들어온 친구 <span id="lob-n"></span></div>
+      <div id="lob-players" class="lobplayers"></div>
+      <details class="setbox" ${S.ui.setOpen?'open':''} ontoggle="S.ui.setOpen=this.open"><summary>⚙️ 게임 설정</summary>
+      <div class="settings">
+        <label>라운드 수</label><input type="number" min="1" max="5" value="${s.rounds}" onchange="A.set('rounds',this.value)">
+        <label>답 쓰기 시간(초, 주제마다)</label><input type="number" min="20" max="300" step="10" value="${s.writeSec}" onchange="A.set('writeSec',this.value)">
+        <label>답 부르기 시간(초)</label><input type="number" min="10" max="120" step="5" value="${s.turnSec}" onchange="A.set('turnSec',this.value)">
+        <label>비슷한 답 신청 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.claimSec}" onchange="A.set('claimSec',this.value)">
+        <label>투표 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.voteSec}" onchange="A.set('voteSec',this.value)">
+        <label>라운드가 끝나면 순위를 보여 주고 자동으로 다음 라운드</label><input type="checkbox" style="width:28px;height:28px" ${s.autoNext!==false?'checked':''} onchange="A.set('autoNext',this.checked)">
+        <label>순위표 보여 주는 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.autoSec}" onchange="A.set('autoSec',this.value)">
+        <label>기본 주제 카드 ${TOPICS.length}개 쓰기</label><input type="checkbox" style="width:28px;height:28px" ${s.useBase!==false?'checked':''} onchange="A.set('useBase',this.checked)">
+        <label style="grid-column:1/3">우리 반 주제 추가 (한 줄에 하나)</label>
+        <textarea placeholder="예) 우리 학교 급식 메뉴&#10;5학년 사회 시간에 배운 것" onchange="A.set('custom',this.value)">${esc(s.custom||'')}</textarea>
+      </div></details>`;
+    ctrl=`<button class="pink" style="font-size:26px;padding:14px 40px" ${n<2?'disabled':''} onclick="A.startGame()">▶ 게임 시작 (${n}명)</button>`;
+  } else if(ph==='topic'){
+    stage=`<div class="mid">주제 ${st.tIdx+1}/3 · <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>
+      <div class="big" style="margin-top:8px">🃏 ${esc(pname(st.picker))}의 주제 고르기</div>
+      <div class="hcards">${(st.cands||[]).map((c,i)=>`<button class="teal" onclick="A.hpick(${i})">${esc(c)}</button>`).join('')}</div>
+      <div class="muted" style="margin-top:14px">학생이 고르지 못하면 선생님이 눌러도 돼요. 시간이 지나면 무작위로 정해져요.</div>`;
+    ctrl=`<button class="ghost" onclick="A.redraw()">🔄 다른 주제 뽑기</button>`;
+  } else if(ph==='write'){
+    const pl=sortedPids(true); const done=pl.filter(p=>topicCount(cellsOf(p,st.round),st.tIdx)>=3).length;
+    stage=`<div class="mid">주제 ${st.tIdx+1}/3</div>
+      <div class="topicbox t${st.tIdx}" style="margin:14px 0">${esc(st.topics?.['t'+st.tIdx])}</div>
+      <div class="big">답 3개를 써요! <span class="cdbig">${cdSpan(st.deadline,'')}</span>초</div>
+      <div class="prog"><i style="width:${pl.length?done/pl.length*100:0}%"></i></div>
+      <div class="mid">${done} / ${pl.length}명 완료</div>${pendingHTML(true)}
+      ${[0,1,2].filter(t=>t<st.tIdx).length?`<div class="chips">${[0,1,2].filter(t=>t<st.tIdx).map(t=>`<span class="chip g">${t+1}. ${esc(st.topics['t'+t])}</span>`).join('')}</div>`:''}`;
+    ctrl=`<button class="ghost" onclick="A.addTime(30)">⏱ +30초</button><button class="pink" onclick="A.endWrite()">✋ 마감하기</button>`;
+  } else if(ph==='turn'){
+    const cur=st.order[st.turn];
+    const H=Object.values(R.hist?.['r'+st.round]||{}).sort((a,b)=>b.n-a.n).slice(0,5);
+    stage=`<div class="mid">${[0,1,2].map(t=>`<span class="topicbox t${t}" style="font-size:22px;padding:4px 14px">${esc(st.topics?.['t'+t])}</span>`).join(' ')}</div>
+      <div class="huge" style="margin-top:24px">🎤 ${esc(pname(cur))}의 차례</div>
+      <div class="cdbig" style="margin-top:8px">${cdSpan(st.deadline,'')}</div>
+      ${st.msg?`<div class="mid muted">${esc(st.msg)}</div>`:''}
+      ${H.length?`<div class="hist">${H.map(h=>`<div>${h.type==='jinx'?'★':h.type==='match'?'⭕':'✗'} <b>${esc(h.t)}</b> <span class="muted">— ${esc(h.p)}${h.type==='match'?` 외 ${h.k}명`:h.type==='jinx'?` & ${esc(h.q)}`:''}</span></div>`).join('')}</div>`:''}`;
+    ctrl=`<button class="ghost" onclick="A.skip()">⏭ 건너뛰기</button><button class="ghost" onclick="A.endRound()">🏁 라운드 끝내기</button>`;
+  } else if(ph==='claim'){
+    const c=st.call, auto=st.auto||{}; const C=R.claims?.['n'+st.callNo]||{};
+    const el=claimEligible(); const resp=el.filter(p=>C[p]!=null).length;
+    stage=`<div class="mid">${esc(pname(c.pid))}의 답</div><div class="called" style="margin:14px 0">${esc(c.t)}</div>
+      <div class="mid">똑같이 쓴 친구</div>
+      <div class="chips">${Object.keys(auto).length?Object.keys(auto).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join(''):'<span class="chip g">아직 없음</span>'}</div>
+      <div class="mid" style="margin-top:22px">비슷한 답 신청 받는 중 <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>
+      <div class="muted">${resp} / ${el.length}명 응답</div>${pendingHTML(true)}`;
+    ctrl=`<button class="pink" onclick="A.endClaim()">⚖️ 바로 판정</button>`;
+  } else if(ph==='vote'){
+    const c=st.call, cl=st.claims||{}, V=R.votes?.['n'+st.callNo]||{}, ovr=st.ovr||{};
+    stage=`<div class="mid">${esc(pname(c.pid))}의 답</div><div class="called" style="margin:10px 0">${esc(c.t)}</div>
+      ${Object.keys(st.auto||{}).length?`<div class="chips">${Object.keys(st.auto).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join('')}</div>`:''}
+      <div class="big" style="margin-top:12px">같은 뜻일까요? 투표! <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>
+      <div class="hvote">${Object.keys(cl).map(p=>{ const t=tally(V[p]); const o=ovr[p];
+        return `<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div>
+        <div class="tally">👍 ${t.y} · 👎 ${t.n}</div>
+        <button class="sm ${o===1?'teal':o===0?'pink':'ghost'}" onclick="A.ovr('${p}')">${o===1?'선생님: 인정':o===0?'선생님: 불인정':'투표대로'}</button></div>`; }).join('')}</div>${pendingHTML(true)}`;
+    ctrl=`<button class="pink" onclick="A.resolve()">⚖️ 판정하기</button>`;
+  } else if(ph==='result'){
+    const r=st.result;
+    if(r.type==='jinx') stage=`<div class="result-jinx">★ 징크스! ★</div><div class="called" style="margin:14px 0">${esc(r.t)}</div><div class="big">${esc(pname(r.caller))} & ${esc(pname(r.who[0]))} <span style="color:var(--yellow)">+3점</span></div>`;
+    else if(r.type==='match') stage=`<div class="result-match">⭕ ${r.who.length+1}명 일치!</div><div class="called" style="margin:14px 0">${esc(r.t)}</div><div class="chips">${[r.caller].concat(r.who).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join('')}</div>`;
+    else stage=`<div class="result-miss">✗ 아무도 없어요</div><div class="called" style="margin:14px 0">${esc(r.t)}</div><div class="mid">${esc(pname(r.caller))}의 답에 ✗</div>`;
+    if(r.acc && Object.keys(r.acc).length) stage+=`<div class="muted" style="margin-top:10px">투표로 인정: ${Object.keys(r.acc).map(p=>esc(pname(p))+' ‘'+esc(r.acc[p])+'’').join(', ')}</div>`;
+    ctrl=`<button class="ghost" onclick="A.afterResult()">다음 ▶</button>`;
+  } else if(ph==='roundEnd' || ph==='gameEnd'){
+    const ranks=sortedPids(false).map(p=>({p,t:totalScore(p),r:+(R.scores?.[p]?.['r'+st.round]??0)})).sort((a,b)=>b.t-a.t);
+    if(S.ui.boards){
+      stage=`<div class="big">라운드 ${st.round} 모든 보드</div><div class="boards">${rosterOf(st.round).map(p=>`<div><div class="nm">${esc(pname(p))} · ${calcScore(cellsOf(p,st.round)).total}점</div>${boardHTML(cellsOf(p,st.round),{mini:true,color:pcolor(p)})}</div>`).join('')}</div>`;
+    } else if(ph==='gameEnd'){
+      const t3=ranks.slice(0,3);
+      stage=`<div class="huge">🏆 최종 결과</div>
+        <div class="podium">${t3[1]?`<div class="p2">2등<br>${esc(pname(t3[1].p))}<br>${t3[1].t}점</div>`:''}${t3[0]?`<div class="p1">👑 1등<br>${esc(pname(t3[0].p))}<br>${t3[0].t}점</div>`:''}${t3[2]?`<div class="p3">3등<br>${esc(pname(t3[2].p))}<br>${t3[2].t}점</div>`:''}</div>
+        ${rankTable(ranks,st.round)}`;
+    } else {
+      stage=`<div class="big">라운드 ${st.round} 끝!</div>${st.finisher?`<div class="mid muted">${esc(pname(st.finisher))}의 보드가 모두 채워졌어요</div>`:''}${rankTable(ranks,st.round)}`;
+    }
+    if(ph==='roundEnd' && st.deadline){
+      stage+=`<div class="mid" style="margin-top:14px">⏩ <span class="cdbig">${cdSpan(st.deadline,'')}</span>초 뒤 ${st.round>=s.rounds?'최종 결과':`라운드 ${st.round+1} 자동 시작`}</div>`;
+    }
+    ctrl=(ph==='roundEnd'&&st.deadline?`<button class="ghost" onclick="A.pauseAuto()">⏸ 멈추기</button>`:'')+`<button class="ghost" onclick="A.toggleBoards()">${S.ui.boards?'📊 순위 보기':'🔍 모든 보드 보기'}</button>`+
+      (ph==='roundEnd'? (st.round>=s.rounds?`<button class="pink" onclick="A.finish()">🏆 최종 결과</button>`:`<button class="pink" onclick="A.nextRound()">▶ 라운드 ${st.round+1} 시작</button>`)
+        : `<button class="pink" onclick="A.resetGame()">🔁 다시 하기 (같은 방)</button><button class="ghost" onclick="A.closeRoom()">방 닫기</button>`);
+  }
+  setHTML($('#h-stage'),stage); setHTML($('#h-ctrl'),ctrl);
+  if(ph==='lobby'){
+    const L=sortedPids(false);
+    setHTML($('#lob-n'), `<b style="color:var(--yellow)">${L.length}명</b>`);
+    setHTML($('#lob-players'), L.length? L.map(p=>`<span class="lp ${isOnline(p)?'':'off'}">${esc(pname(p))}<button title="내보내기" onclick="A.kick('${p}')">✕</button></span>`).join('') : '<span class="muted">아직 아무도 없어요</span>');
+  }
+  setHTML($('#h-side'),sideHTML());
+}
+function rankTable(ranks,round){
+  return `<table class="rank"><tr><th>순위</th><th style="text-align:left">이름</th><th style="text-align:right">라운드 ${round}</th><th style="text-align:right">합계</th></tr>${ranks.map((x,k)=>`<tr class="${k<3?'top':''}"><td class="center">${k+1}</td><td>${esc(pname(x.p))}</td><td class="n">${x.r}</td><td class="n">${x.t}</td></tr>`).join('')}</table>`;
+}
+function pendingInfo(){
+  const R=S.R, st=R.state||{}, ph=st.phase;
+  if(ph==='write'){ const L=sortedPids(true).filter(p=>topicCount(cellsOf(p,st.round),st.tIdx)<3); return {label:'아직 다 못 쓴 친구', list:L, extra:p=>` ${topicCount(cellsOf(p,st.round),st.tIdx)}/3`}; }
+  if(ph==='claim'){ const C=R.claims?.['n'+st.callNo]||{}; return {label:'아직 응답 안 한 친구', list:claimEligible().filter(p=>C[p]==null), extra:()=>''}; }
+  if(ph==='vote'){ const V=R.votes?.['n'+st.callNo]||{}; const cl=Object.keys(st.claims||{}); return {label:'아직 투표 안 한 친구', list:voters(st).filter(v=>!cl.every(c=>c===v||V[c]?.[v]!=null)), extra:()=>''}; }
+  if(ph==='topic') return {label:'주제 고르는 친구', list:st.picker?[st.picker]:[], extra:()=>''};
+  return null;
+}
+function pendingHTML(big){
+  const pi=pendingInfo(); if(!pi) return '';
+  if(!pi.list.length) return `<div class="pend done">✅ 모두 완료!</div>`;
+  return `<div class="pend ${big?'big':''}"><div class="pl">⏳ ${pi.label} <b>${pi.list.length}명</b></div><div class="chips">${pi.list.map(p=>`<span class="chip w">${esc(pname(p))}${pi.extra(p)}</span>`).join('')}</div></div>`;
+}
+function rankOf(pid){ const t=totalScore(pid); return sortedPids(false).filter(p=>totalScore(p)>t).length+1; }
+function rankBox(me){
+  const L=sortedPids(false).map(p=>({p,t:totalScore(p)})).sort((a,b)=>b.t-a.t); if(!L.length) return '';
+  const top=L.slice(0,5); const mi=L.findIndex(x=>x.p===me);
+  const row=x=>{ const r=rankOf(x.p); return `<div class="rrow ${x.p===me?'me':''}"><span class="rk">${['🥇','🥈','🥉'][r-1]||r+'등'}</span><span class="nm">${esc(pname(x.p))}</span><b>${x.t}점</b></div>`; };
+  return `<div class="rankbox"><div class="rt">🏆 실시간 순위 <small>${L.length}명</small></div>${top.map(row).join('')}${mi>=5?`<div class="rdots">⋯</div>`+row(L[mi]):''}</div>`;
+}
+function tally(v){ let y=0,n=0; for(const k in v||{}){ if(v[k]===1) y++; else if(v[k]===0) n++; } return {y,n}; }
+function sideHTML(){
+  const R=S.R, st=R.state||{}; const ph=st.phase;
+  const list=sortedPids(false).map(p=>({p,t:totalScore(p)}));
+  if(ph!=='lobby') list.sort((a,b)=>b.t-a.t);
+  const cur = ph==='turn'? st.order[st.turn] : (ph==='claim'||ph==='vote')? st.call?.pid : null;
+  const C=R.claims?.['n'+st.callNo]||{}, V=R.votes?.['n'+st.callNo]||{};
+  return `<h3><span>참가자</span><span>${sortedPids(true).length}명</span></h3><ul class="plist">${list.map(({p,t})=>{
+    let stx='';
+    if(ph==='write') stx=topicCount(cellsOf(p,st.round),st.tIdx)+'/3';
+    else if(ph==='claim') stx = st.auto?.[p]!=null?'✨': C[p]==='-'?'✓': C[p]?'🙋':'';
+    else if(ph==='vote') stx = Object.keys(st.claims||{}).some(c=>V[c]?.[p]!=null)?'✓':'';
+    else if(['turn','result'].includes(ph) && !(st.order||[]).includes(p)) stx='👀';
+    const rk = (ph==='lobby'||t<=0)?'<span class="rk"></span>':`<span class="rk">${['🥇','🥈','🥉'][rankOf(p)-1]||rankOf(p)}</span>`;
+    const pi=pendingInfo(); const waiting=pi && pi.list.includes(p) && ph!=='topic';
+    return `<li class="${p===cur?'act':''} ${waiting?'wait':''}">${rk}<span class="dot ${isOnline(p)?'':'off'}"></span><span class="nm">${esc(pname(p))}</span><span class="st">${stx}</span>${ph!=='lobby'?`<span class="sc">${t}</span>`:''}<button class="kick" title="내보내기" onclick="A.kick('${p}')">✕</button></li>`;
+  }).join('')}</ul>`;
+}
+
+/* ---------- 선생님 조작 ---------- */
+const room = () => roomPath(S.code);
+let lock=false;
+function commit(upd){ lock=true; return Promise.resolve(DB.update(room(),upd)).catch(e=>{ console.error(e); toast('저장 실패: '+e.message); }).finally(()=>{ setTimeout(()=>{lock=false;},150); }); }
+function st0(){ return JSON.parse(JSON.stringify(S.R.state||{})); }
+
+A.set = (k,v) => { if(['rounds','writeSec','turnSec','claimSec','voteSec','autoSec'].includes(k)) v=Math.max(0,parseInt(v)||0); DB.set(room()+'/meta/settings/'+k, v); };
+A.kick = p => { if(!confirm(`${pname(p)} 학생을 내보낼까요?\n(같은 이름으로 다시 들어오면 새로 참가해요)`)) return; const u={}; u['players/'+p]=null; u['boards/'+p]=null; u['scores/'+p]=null; u['req/'+p]=null; commit(u); };
+A.qrBig = () => {
+  const o=document.createElement('div'); o.className='overlay qrbig'; o.onclick=()=>o.remove();
+  o.innerHTML=`<div class="qrbox">${qrSVG(joinURL())}</div><div style="color:#fff;font-family:Jua;font-size:clamp(34px,5vw,72px)">방 코드 <span style="color:var(--yellow);letter-spacing:6px">${S.code}</span></div><div class="mid" style="color:#ddd;word-break:break-all">${esc(joinURL())}</div><div class="muted">아무 곳이나 누르면 닫혀요</div>`;
+  document.body.appendChild(o);
+};
+A.toggleBoards = () => { S.ui.boards=!S.ui.boards; renderHost(); };
+
+function drawCands(st){
+  const D=deck(); const used=st.used||{}; let pool=D.map((t,i)=>i).filter(i=>!used['i'+i]);
+  if(pool.length<2){ st.used={}; pool=D.map((t,i)=>i); }
+  const out=[]; while(out.length<2 && pool.length){ out.push(pool.splice(rand(pool.length),1)[0]); }
+  st.candIdx=out; st.cands=out.map(i=>D[i]);
+}
+function enterTopic(st,tIdx){
+  st.phase='topic'; st.tIdx=tIdx; drawCands(st);
+  const P=sortedPids(true); let k=P.indexOf(st.first); if(k<0) k=0;
+  st.picker = P.length? P[(k+tIdx)%P.length] : null;
+  st.deadline=DB.now()+25000;
+  return st;
+}
+A.startGame = () => {
+  const P=sortedPids(true); if(P.length<2) return toast('2명 이상 들어와야 해요');
+  const st={phase:'lobby',round:1,callNo:0,first:P[rand(P.length)],topics:{}};
+  enterTopic(st,0);
+  commit({state:st, boards:null, scores:null, hist:null, claims:null, votes:null, req:null});
+};
+A.hpick = i => chooseTopic(i);
+A.redraw = () => { const st=st0(); drawCands(st); st.deadline=DB.now()+25000; commit({state:st}); };
+function chooseTopic(i){
+  const st=st0(); if(st.phase!=='topic') return;
+  st.topics=st.topics||{}; st.topics['t'+st.tIdx]=st.cands[i];
+  st.used=st.used||{}; st.used['i'+st.candIdx[i]]=true;
+  st.phase='write'; st.deadline=DB.now()+settings().writeSec*1000; S.ui.allDoneAt=null;
+  commit({state:st});
+}
+A.addTime = sec => { const st=st0(); st.deadline=Math.max(st.deadline,DB.now())+sec*1000; commit({state:st}); };
+A.endWrite = () => endWrite();
+function endWrite(){
+  const st=st0(); if(st.phase!=='write') return;
+  if(st.tIdx<2){ enterTopic(st,st.tIdx+1); return commit({state:st}); }
+  startCalling(st);
+}
+function startCalling(st){
+  const ros=rosterOf(st.round);
+  if(!ros.length){ toast('답을 쓴 학생이 없어요'); st.phase='roundEnd'; return finishRound(st,null); }
+  let k=ros.indexOf(st.first); if(k<0) k=0;
+  st.order=ros.slice(k).concat(ros.slice(0,k));
+  st.turn=-1; st.msg='';
+  const nx=nextEligible(st);
+  if(nx<0) return finishRound(st,null);
+  st.turn=nx; st.phase='turn'; st.deadline=DB.now()+settings().turnSec*1000; st.turnStart=DB.now();
+  commit({state:st});
+}
+function nextEligible(st){
+  const n=st.order.length;
+  for(let k=1;k<=n;k++){ const i=(st.turn+k+n)%n; const p=st.order[i]; if(isOnline(p) && unmarked(cellsOf(p,st.round)).length) return i; }
+  return -1;
+}
+A.skip = () => { const st=st0(); if(st.phase!=='turn') return; goNextTurn(st,`${pname(st.order[st.turn])} 차례를 건너뛰었어요`); };
+function goNextTurn(st,msg){
+  const nx=nextEligible(st);
+  if(nx<0) return finishRound(st,null);
+  st.turn=nx; st.phase='turn'; st.msg=msg||''; st.deadline=DB.now()+settings().turnSec*1000; st.turnStart=DB.now();
+  delete st.call; delete st.auto; delete st.claims; delete st.ovr; delete st.result;
+  commit({state:st});
+}
+function doCall(pid,ci){
+  const st=st0(); if(st.phase!=='turn' || st.order[st.turn]!==pid) return;
+  const cells=cellsOf(pid,st.round); const x=cells['c'+ci]; if(!x?.t || x.m) return;
+  const n=norm(x.t); const auto={};
+  for(const p of st.order){ if(p===pid) continue; const cs=cellsOf(p,st.round); for(let i=0;i<9;i++){ const y=cs['c'+i]; if(y?.t && !y.m && norm(y.t)===n){ auto[p]=i; break; } } }
+  st.callNo=(st.callNo||0)+1; st.call={pid,c:ci,t:x.t}; st.auto=auto; delete st.claims; delete st.ovr;
+  st.phase='claim'; st.deadline=DB.now()+settings().claimSec*1000; st.msg='';
+  if(!claimEligibleFor(st).length){ st.phase='claim'; st.deadline=DB.now()+1500; }
+  commit({state:st});
+}
+function claimEligibleFor(st){ return (st.order||[]).filter(p=>p!==st.call.pid && st.auto?.[p]==null && isOnline(p) && unmarked(cellsOf(p,st.round)).length); }
+function claimEligible(){ return claimEligibleFor(S.R.state); }
+A.endClaim = () => endClaim();
+function endClaim(){
+  const st=st0(); if(st.phase!=='claim') return;
+  const C=S.R.claims?.['n'+st.callNo]||{}; const cl={};
+  for(const p in C){ const v=C[p]; if(!v||v==='-'||p===st.call.pid||st.auto?.[p]!=null||!(st.order||[]).includes(p)) continue; const i=+String(v).slice(1); const x=cellsOf(p,st.round)['c'+i]; if(x?.t && !x.m) cl[p]={c:i,t:x.t}; }
+  if(!Object.keys(cl).length) return resolveCall(st);
+  st.claims=cl; st.ovr={}; st.phase='vote'; st.deadline=DB.now()+settings().voteSec*1000;
+  commit({state:st});
+}
+function voters(st){ return sortedPids(true).filter(p=>p!==st.call.pid); }
+function allVoted(st){
+  const V=S.R.votes?.['n'+st.callNo]||{}; const vs=voters(st); const cl=Object.keys(st.claims||{});
+  return vs.length>0 && vs.every(v=>cl.every(c=>c===v || V[c]?.[v]!=null));
+}
+A.ovr = p => { const st=st0(); st.ovr=st.ovr||{}; const o=st.ovr[p]; st.ovr[p]= o===undefined?1: o===1?0: null; if(st.ovr[p]===null) delete st.ovr[p]; commit({state:st}); };
+A.resolve = () => resolveCall(st0());
+function resolveCall(st){
+  if(!['claim','vote'].includes(st.phase)) return;
+  const V=S.R.votes?.['n'+st.callNo]||{}; const acc={}; const who=Object.keys(st.auto||{}); const whoCell={...(st.auto||{})};
+  for(const p in (st.claims||{})){
+    const o=st.ovr?.[p]; const t=tally(V[p]); const ok = o===1 || (o===undefined && t.y>t.n);
+    if(ok){ acc[p]=st.claims[p].t; who.push(p); whoCell[p]=st.claims[p].c; }
+  }
+  const r=st.round, caller=st.call.pid, u={};
+  const B=(p,i)=>`boards/${p}/r${r}/c${i}`;
+  let type;
+  if(who.length===0){ type='miss'; u[B(caller,st.call.c)+'/m']='x'; }
+  else if(who.length===1){ type='jinx'; u[B(caller,st.call.c)+'/m']='o'; u[B(caller,st.call.c)+'/s']=true; u[B(who[0],whoCell[who[0]])+'/m']='o'; u[B(who[0],whoCell[who[0]])+'/s']=true; }
+  else { type='match'; u[B(caller,st.call.c)+'/m']='o'; who.forEach(p=>u[B(p,whoCell[p])+'/m']='o'); }
+  st.result={type,caller,t:st.call.t,who,acc};
+  st.phase='result'; st.deadline=DB.now()+(type==='jinx'?5000:type==='match'?4000:3500);
+  u.state=st;
+  u[`hist/r${r}/n${st.callNo}`]={n:st.callNo,t:st.call.t,p:pname(caller),type,k:who.length,q:type==='jinx'?pname(who[0]):''};
+  commit(u);
+}
+A.afterResult = () => afterResult();
+function afterResult(){
+  const st=st0(); if(st.phase!=='result') return;
+  const fin=(st.order||[]).find(p=>{ const cs=cellsOf(p,st.round); return filledCount(cs)===9 && unmarked(cs).length===0; });
+  if(fin) return finishRound(st,fin);
+  goNextTurn(st,'');
+}
+A.endRound = () => { if(confirm('이번 라운드를 끝낼까요?')) finishRound(st0(),null); };
+function finishRound(st,fin){
+  const u={};
+  rosterOf(st.round).forEach(p=>{ u[`scores/${p}/r${st.round}`]=calcScore(cellsOf(p,st.round)).total; });
+  st.phase='roundEnd'; st.finisher=fin||null; delete st.call; delete st.auto; delete st.claims; delete st.ovr; delete st.result; delete st.deadline;
+  if(settings().autoNext!==false) st.deadline=DB.now()+Math.max(5,settings().autoSec||15)*1000;
+  u.state=st; S.ui.boards=false;
+  commit(u);
+}
+A.nextRound = () => {
+  const st=st0(); const ros=rosterOf(st.round).filter(isOnline);
+  let low=null, lv=Infinity; (ros.length?ros:sortedPids(true)).forEach(p=>{ const v=+(S.R.scores?.[p]?.['r'+st.round]??0); if(v<lv || (v===lv && Math.random()<.5)){ lv=v; low=p; } });
+  st.round++; st.first=low||sortedPids(true)[0]; st.topics={}; delete st.order; delete st.finisher;
+  enterTopic(st,0); S.ui.boards=false;
+  commit({state:st});
+};
+A.pauseAuto = () => { const st=st0(); delete st.deadline; commit({state:st}); };
+A.finish = () => { const st=st0(); st.phase='gameEnd'; delete st.deadline; S.ui.boards=false; commit({state:st}); };
+A.resetGame = () => { if(!confirm('점수를 지우고 처음부터 다시 할까요?')) return; commit({state:{phase:'lobby',round:0}, boards:null, scores:null, hist:null, claims:null, votes:null, req:null}); };
+A.closeRoom = () => { if(!confirm('방을 닫을까요? 학생들도 모두 나가게 돼요.')) return; localStorage.removeItem('jinxo_host'); const c=S.code; if(S.off){S.off();S.off=null;} DB.remove(roomPath(c)); renderHome(); };
+
+/* ---------- 진행 엔진 (선생님 화면이 담당) ---------- */
+function hostStep(){
+  if(!isActiveHost() || lock) return;
+  const R=S.R, st=R.state||{}, now=DB.now(), s=settings();
+  const reqs=R.req||{};
+  for(const p in reqs){
+    const q=reqs[p]; lock=true;
+    Promise.resolve(DB.remove(room()+'/req/'+p)).finally(()=>{ lock=false;
+      if(q.type==='pick' && st.phase==='topic' && st.picker===p) chooseTopic(q.i);
+      else if(q.type==='call') doCall(p,+String(q.c).slice(1));
+    });
+    return;
+  }
+  switch(st.phase){
+    case 'topic': if(now>st.deadline) chooseTopic(rand((st.cands||[]).length||1)); break;
+    case 'write': {
+      const pl=sortedPids(true); const all=pl.length>0 && pl.every(p=>topicCount(cellsOf(p,st.round),st.tIdx)>=3);
+      if(all){ if(!S.ui.allDoneAt) S.ui.allDoneAt=now; } else S.ui.allDoneAt=null;
+      if(now>st.deadline || (S.ui.allDoneAt && now-S.ui.allDoneAt>2000)){ S.ui.allDoneAt=null; endWrite(); }
+      break; }
+    case 'turn': { const p=st.order[st.turn];
+      if(now>st.deadline) goNextTurn(st0(),`${pname(p)} 시간 초과 — 다음 사람!`);
+      else if(!isOnline(p) && now-(st.turnStart||0)>4000) goNextTurn(st0(),`${pname(p)} 접속이 끊겨서 넘어가요`);
+      break; }
+    case 'claim': {
+      const C=R.claims?.['n'+st.callNo]||{}; const el=claimEligible();
+      if(now>st.deadline || (el.length && el.every(p=>C[p]!=null))) endClaim();
+      break; }
+    case 'vote': if(now>st.deadline || allVoted(st)) resolveCall(st0()); break;
+    case 'result': if(now>st.deadline) afterResult(); break;
+    case 'roundEnd': if(st.deadline && now>st.deadline){ if(st.round>=s.rounds) A.finish(); else A.nextRound(); } break;
+  }
+}
+
+/* ---------------- 시작 ---------------- */
+(async()=>{
+  try{ await DB.init(); }catch(e){ console.error(e); document.getElementById('app').innerHTML='<div class="home"><div class="banner" style="background:var(--pink)">Firebase를 불러오지 못했어요. 인터넷 연결과 설정을 확인해 주세요.</div></div>'; return; }
+  if(DB.mode==='mock'){ const mb=$('#modebar'); mb.textContent='🧪 로컬 테스트 모드 — 같은 브라우저의 탭끼리만 연결돼요 (FIREBASE_CONFIG를 넣으면 온라인 방이 돼요)'; mb.classList.remove('hidden'); document.body.classList.add('hasbar'); }
+  renderHome();
+})();
+</script>
+</body>
+</html>
