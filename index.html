@@ -240,6 +240,7 @@ button.ghost{background:#8a55c9;color:#fff;box-shadow:0 4px 0 rgba(60,10,90,.45)
 .qrbig{cursor:pointer}
 .qrbox{background:#fff;padding:18px;border-radius:24px}
 .qrbox svg{width:min(62vh,80vw);height:min(62vh,80vw);display:block}
+.stopbtn{background:#3a2a55!important}
 </style>
 </head>
 <body>
@@ -1579,7 +1580,8 @@ const DB = (()=>{
   function notify(){
     for(const l of listeners){ const v=getAt(l.parts); const s=JSON.stringify(v); if(s!==l.last){ l.last=s; try{ l.cb(v==null?null:JSON.parse(s)); }catch(e){ console.error(e); } } }
   }
-  function mockWrite(ops){ ops.forEach(([p,v])=>applyOne(P(p),v)); persist(); if(bc) bc.postMessage(ops); notify(); return Promise.resolve(); }
+  function findUndef(v,path){ if(v===undefined) return path||'(root)'; if(v&&typeof v==='object'){ for(const k in v){ const r=findUndef(v[k],path+'/'+k); if(r) return r; } } return null; }
+  function mockWrite(ops){ for(const [p,v] of ops){ const u=findUndef(v,p); if(u) throw new Error('undefined 값 (Firebase라면 오류): '+u); } ops.forEach(([p,v])=>applyOne(P(p),v)); persist(); if(bc) bc.postMessage(ops); notify(); return Promise.resolve(); }
   function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
   return {
     get mode(){ return mode; },
@@ -2018,7 +2020,7 @@ function renderHost(){
       stage=`<div class="big">라운드 ${st.round} 모든 보드</div><div class="boards">${rosterOf(st.round).map(p=>`<div><div class="nm">${esc(pname(p))} · ${calcScore(cellsOf(p,st.round)).total}점</div>${boardHTML(cellsOf(p,st.round),{mini:true,color:pcolor(p)})}</div>`).join('')}</div>`;
     } else if(ph==='gameEnd'){
       const t3=ranks.slice(0,3);
-      stage=`<div class="huge">🏆 최종 결과</div>
+      stage=`<div class="huge">🏆 최종 결과</div>${st.stopped?`<div class="mid muted">(라운드 ${st.round}에서 중단 — 지금까지 점수)</div>`:''}
         <div class="podium">${t3[1]?`<div class="p2">2등<br>${esc(pname(t3[1].p))}<br>${t3[1].t}점</div>`:''}${t3[0]?`<div class="p1">👑 1등<br>${esc(pname(t3[0].p))}<br>${t3[0].t}점</div>`:''}${t3[2]?`<div class="p3">3등<br>${esc(pname(t3[2].p))}<br>${t3[2].t}점</div>`:''}</div>
         ${rankTable(ranks,st.round)}`;
     } else {
@@ -2031,6 +2033,7 @@ function renderHost(){
       (ph==='roundEnd'? (st.round>=s.rounds?`<button class="pink" onclick="A.finish()">🏆 최종 결과</button>`:`<button class="pink" onclick="A.nextRound()">▶ 라운드 ${st.round+1} 시작</button>`)
         : `<button class="pink" onclick="A.resetGame()">🔁 다시 하기 (같은 방)</button><button class="ghost" onclick="A.closeRoom()">방 닫기</button>`);
   }
+  if(ph && !['lobby','gameEnd'].includes(ph)) ctrl+=`<button class="ghost stopbtn" onclick="A.stopGame()">⏹ 게임 중단</button>`;
   setHTML($('#h-stage'),stage); setHTML($('#h-ctrl'),ctrl);
   if(ph==='lobby'){
     const L=sortedPids(false);
@@ -2084,7 +2087,14 @@ function sideHTML(){
 /* ---------- 선생님 조작 ---------- */
 const room = () => roomPath(S.code);
 let lock=false;
-function commit(upd){ lock=true; return Promise.resolve(DB.update(room(),upd)).catch(e=>{ console.error(e); toast('저장 실패: '+e.message); }).finally(()=>{ setTimeout(()=>{lock=false;},150); }); }
+function commit(upd){
+  lock=true;
+  let pr;
+  try{ pr=Promise.resolve(DB.update(room(), JSON.parse(JSON.stringify(upd)))); } // undefined 값 제거 (Firebase는 undefined가 있으면 저장을 거부함)
+  catch(e){ pr=Promise.reject(e); }
+  return pr.catch(e=>{ console.error(e); toast('저장 실패: '+e.message,3500); }).finally(()=>{ setTimeout(()=>{lock=false;},150); });
+}
+const LOBBY_RESET = () => ({state:{phase:'lobby',round:0}, boards:null, scores:null, hist:null, claims:null, votes:null, req:null});
 function st0(){ return JSON.parse(JSON.stringify(S.R.state||{})); }
 
 A.set = (k,v) => { if(['rounds','writeSec','turnSec','claimSec','voteSec','autoSec'].includes(k)) v=Math.max(0,parseInt(v)||0); DB.set(room()+'/meta/settings/'+k, v); };
@@ -2221,19 +2231,37 @@ function finishRound(st,fin){
 A.nextRound = () => {
   const st=st0(); const ros=rosterOf(st.round).filter(isOnline);
   let low=null, lv=Infinity; (ros.length?ros:sortedPids(true)).forEach(p=>{ const v=+(S.R.scores?.[p]?.['r'+st.round]??0); if(v<lv || (v===lv && Math.random()<.5)){ lv=v; low=p; } });
-  st.round++; st.first=low||sortedPids(true)[0]; st.topics={}; delete st.order; delete st.finisher;
+  if(!low && !sortedPids(true).length){ toast('접속한 학생이 없어요'); return; }
+  st.round++; st.first=low||sortedPids(true)[0]||sortedPids(false)[0]; st.topics={}; delete st.order; delete st.finisher;
   enterTopic(st,0); S.ui.boards=false;
   commit({state:st});
 };
 A.pauseAuto = () => { const st=st0(); delete st.deadline; commit({state:st}); };
 A.finish = () => { const st=st0(); st.phase='gameEnd'; delete st.deadline; S.ui.boards=false; commit({state:st}); };
-A.resetGame = () => { if(!confirm('점수를 지우고 처음부터 다시 할까요?')) return; commit({state:{phase:'lobby',round:0}, boards:null, scores:null, hist:null, claims:null, votes:null, req:null}); };
+A.resetGame = () => { if(!confirm('점수를 지우고 처음부터 다시 할까요?')) return; commit(LOBBY_RESET()); };
+A.stopGame = () => {
+  const o=document.createElement('div'); o.className='overlay'; o.id='stop-over';
+  o.innerHTML=`<div style="font-family:Jua;font-size:40px">게임을 멈출까요?</div>
+    <button class="pink" style="font-size:24px;padding:14px 30px" onclick="A.stopToResult()">🏆 지금까지 점수로 결과 보기</button>
+    <button class="ghost" style="font-size:22px;padding:12px 26px" onclick="A.stopToLobby()">↩ 대기 화면으로 (점수 지우기)</button>
+    <button style="font-size:20px" onclick="document.getElementById('stop-over').remove()">계속 하기</button>`;
+  document.body.appendChild(o);
+};
+A.stopToResult = () => {
+  document.getElementById('stop-over')?.remove();
+  const st=st0(); const u={};
+  if(st.round && st.phase!=='roundEnd' && st.phase!=='gameEnd') rosterOf(st.round).forEach(p=>{ u[`scores/${p}/r${st.round}`]=calcScore(cellsOf(p,st.round)).total; });
+  u.state={phase:'gameEnd', round:st.round||0, stopped:true}; S.ui.boards=false;
+  commit(u);
+};
+A.stopToLobby = () => { document.getElementById('stop-over')?.remove(); commit(LOBBY_RESET()); };
 A.closeRoom = () => { if(!confirm('방을 닫을까요? 학생들도 모두 나가게 돼요.')) return; localStorage.removeItem('jinxo_host'); const c=S.code; if(S.off){S.off();S.off=null;} DB.remove(roomPath(c)); renderHome(); };
 
 /* ---------- 진행 엔진 (선생님 화면이 담당) ---------- */
 function hostStep(){
   if(!isActiveHost() || lock) return;
   const R=S.R, st=R.state||{}, now=DB.now(), s=settings();
+  if(st.phase && st.phase!=='lobby' && sortedPids(false).length===0){ toast('참가자가 아무도 없어서 대기 화면으로 돌아가요',3000); commit(LOBBY_RESET()); return; }
   const reqs=R.req||{};
   for(const p in reqs){
     const q=reqs[p]; lock=true;
