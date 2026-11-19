@@ -241,6 +241,14 @@ button.ghost{background:#8a55c9;color:#fff;box-shadow:0 4px 0 rgba(60,10,90,.45)
 .qrbox{background:#fff;padding:18px;border-radius:24px}
 .qrbox svg{width:min(62vh,80vw);height:min(62vh,80vw);display:block}
 .stopbtn{background:#3a2a55!important}
+
+.tbar{width:min(70%,640px);height:16px;background:rgba(0,0,0,.28);border-radius:99px;overflow:hidden;margin:10px auto 4px}
+.banner .tbar{width:100%;height:10px}
+.tbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--yellow),#ffb703);border-radius:99px;transition:width .25s linear}
+.tbar.low i{background:linear-gradient(90deg,var(--mag),#ff4f81);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.55}}
+.prog.done{height:12px;width:50%;margin-top:4px}
+.chip.g{animation:none}
 </style>
 </head>
 <body>
@@ -1633,10 +1641,18 @@ function pcolor(pid){ let h=0; for(const ch of String(pid)) h=(h*31+ch.charCodeA
 const rand = n => Math.floor(Math.random()*n);
 function hashName(s){ let h=5381; for(const ch of s) h=((h<<5)+h+ch.codePointAt(0))>>>0; return 'p'+h.toString(36)+s.length; }
 function toast(msg,ms=1800){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),ms); }
-function setHTML(el,html){ if(!el) return; if(el._h!==html){ el._h=html; el.innerHTML=html; } }
+// 남은 초 숫자는 따로 갱신하므로, 비교할 때는 빼고 비교 → 1초마다 화면이 다시 그려지며 깜빡이는 것 방지
+function setHTML(el,html){ if(!el) return; const key=html.replace(/(data-dl="\d+"[^>]*>)\d+</g,'$1<'); if(el._h!==key){ el._h=key; el.innerHTML=html; tick(); } }
 function secLeft(dl){ return Math.max(0,Math.ceil((dl-DB.now())/1000)); }
 function cdSpan(dl,cls='cd'){ return `<span class="${cls}" data-dl="${dl}">${secLeft(dl)}</span>`; }
-setInterval(()=>{ document.querySelectorAll('[data-dl]').forEach(e=>{ const v=secLeft(+e.dataset.dl); if(e.textContent!=String(v)) e.textContent=v; }); },250);
+const TB={};
+function timebar(dl){ return dl?`<div class="tbar"><i data-tb="${dl}"></i></div>`:''; }
+function tick(){
+  document.querySelectorAll('[data-dl]').forEach(e=>{ const v=secLeft(+e.dataset.dl); if(e.textContent!=String(v)) e.textContent=v; });
+  document.querySelectorAll('[data-tb]').forEach(e=>{ const dl=+e.dataset.tb; const left=Math.max(0,dl-DB.now()); if(!TB[dl]) TB[dl]=Math.max(left,1000);
+    const r=Math.min(1,left/TB[dl]); e.style.width=(r*100)+'%'; e.parentNode.classList.toggle('low', left<10000); });
+}
+setInterval(tick,250);
 function josa(name,a,b){ const c=name.charCodeAt(name.length-1); if(c<0xAC00||c>0xD7A3) return name+a; return name+(((c-0xAC00)%28)?a:b); } // a:받침있음 b:없음
 const roomPath = code => `${DB_ROOT}/${code}`;
 
@@ -1789,7 +1805,7 @@ function renderStu(){
   } else if(ph==='write'){
     const tp=st.tIdx, n=topicCount(cells,tp);
     const behind=[0,1,2].filter(t=>t<tp && topicCount(cells,t)<3);
-    ban=`<div class="banner"><div class="small">라운드 ${round} · 주제 ${tp+1}/3 · 남은 시간 ${cdSpan(st.deadline)}초</div>
+    ban=`<div class="banner"><div class="small">라운드 ${round} · 주제 ${tp+1}/3 · 남은 시간 ${cdSpan(st.deadline)}초</div>${timebar(st.deadline)}
       <div class="topicbox t${tp}">${esc(st.topics?.['t'+tp]||'')}</div>
       <div class="mid">${n>=3?'✅ 3개 다 썼어요!':`빈 칸을 눌러 답을 써요 (${n}/3)`}</div>${n>=3?pendingHTML(false):''}
       ${behind.length?`<div class="small">놓친 주제 ${behind.map(t=>NUM[t]).join(' ')} 도 빈 칸에 쓸 수 있어요</div>`:''}
@@ -1799,7 +1815,7 @@ function renderStu(){
   } else if(ph==='turn'){
     if(!inRound) ban=specBanner();
     else if(st.order[st.turn]===me){
-      ban=`<div class="banner" style="background:var(--pink)"><div class="big">🎤 내 차례!</div><div class="mid">부를 답을 눌러요 · ${cdSpan(st.deadline)}초</div></div>`;
+      ban=`<div class="banner" style="background:var(--pink)"><div class="big">🎤 내 차례!</div><div class="mid">부를 답을 눌러요 · ${cdSpan(st.deadline)}초</div>${timebar(st.deadline)}</div>`;
       bopt={click:unmarked(cells),onclick:'A.callCell'};
     } else ban=`<div class="banner"><div class="big">🎤 ${esc(pname(st.order[st.turn]))}의 차례</div><div class="small">친구가 부르는 답을 잘 들어요 · ${cdSpan(st.deadline)}초</div></div>`;
   } else if(ph==='claim'){
@@ -1975,8 +1991,9 @@ function renderHost(){
     stage=`<div class="mid">주제 ${st.tIdx+1}/3</div>
       <div class="topicbox t${st.tIdx}" style="margin:14px 0">${esc(st.topics?.['t'+st.tIdx])}</div>
       <div class="big">답 3개를 써요! <span class="cdbig">${cdSpan(st.deadline,'')}</span>초</div>
-      <div class="prog"><i style="width:${pl.length?done/pl.length*100:0}%"></i></div>
-      <div class="mid">${done} / ${pl.length}명 완료</div>${pendingHTML(true)}
+      ${timebar(st.deadline)}
+      <div class="mid" style="margin-top:6px">✅ 다 쓴 친구 ${done} / ${pl.length}명</div>
+      <div class="prog done"><i style="width:${pl.length?done/pl.length*100:0}%"></i></div>${pendingHTML(true)}
       ${[0,1,2].filter(t=>t<st.tIdx).length?`<div class="chips">${[0,1,2].filter(t=>t<st.tIdx).map(t=>`<span class="chip g">${t+1}. ${esc(st.topics['t'+t])}</span>`).join('')}</div>`:''}`;
     ctrl=`<button class="ghost" onclick="A.addTime(30)">⏱ +30초</button><button class="pink" onclick="A.endWrite()">✋ 마감하기</button>`;
   } else if(ph==='turn'){
@@ -1984,7 +2001,7 @@ function renderHost(){
     const H=Object.values(R.hist?.['r'+st.round]||{}).sort((a,b)=>b.n-a.n).slice(0,5);
     stage=`<div class="mid">${[0,1,2].map(t=>`<span class="topicbox t${t}" style="font-size:22px;padding:4px 14px">${esc(st.topics?.['t'+t])}</span>`).join(' ')}</div>
       <div class="huge" style="margin-top:24px">🎤 ${esc(pname(cur))}의 차례</div>
-      <div class="cdbig" style="margin-top:8px">${cdSpan(st.deadline,'')}</div>
+      <div class="cdbig" style="margin-top:8px">${cdSpan(st.deadline,'')}</div>${timebar(st.deadline)}
       ${st.msg?`<div class="mid muted">${esc(st.msg)}</div>`:''}
       ${H.length?`<div class="hist">${H.map(h=>`<div>${h.type==='jinx'?'★':h.type==='match'?'⭕':'✗'} <b>${esc(h.t)}</b> <span class="muted">— ${esc(h.p)}${h.type==='match'?` 외 ${h.k}명`:h.type==='jinx'?` & ${esc(h.q)}`:''}</span></div>`).join('')}</div>`:''}`;
     ctrl=`<button class="ghost" onclick="A.skip()">⏭ 건너뛰기</button><button class="ghost" onclick="A.endRound()">🏁 라운드 끝내기</button>`;
@@ -1994,14 +2011,14 @@ function renderHost(){
     stage=`<div class="mid">${esc(pname(c.pid))}의 답</div><div class="called" style="margin:14px 0">${esc(c.t)}</div>
       <div class="mid">똑같이 쓴 친구</div>
       <div class="chips">${Object.keys(auto).length?Object.keys(auto).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join(''):'<span class="chip g">아직 없음</span>'}</div>
-      <div class="mid" style="margin-top:22px">비슷한 답 신청 받는 중 <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>
+      <div class="mid" style="margin-top:22px">비슷한 답 신청 받는 중 <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>${timebar(st.deadline)}
       <div class="muted">${resp} / ${el.length}명 응답</div>${pendingHTML(true)}`;
     ctrl=`<button class="pink" onclick="A.endClaim()">⚖️ 바로 판정</button>`;
   } else if(ph==='vote'){
     const c=st.call, cl=st.claims||{}, V=R.votes?.['n'+st.callNo]||{}, ovr=st.ovr||{};
     stage=`<div class="mid">${esc(pname(c.pid))}의 답</div><div class="called" style="margin:10px 0">${esc(c.t)}</div>
       ${Object.keys(st.auto||{}).length?`<div class="chips">${Object.keys(st.auto).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join('')}</div>`:''}
-      <div class="big" style="margin-top:12px">같은 뜻일까요? 투표! <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>
+      <div class="big" style="margin-top:12px">같은 뜻일까요? 투표! <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>${timebar(st.deadline)}
       <div class="hvote">${Object.keys(cl).map(p=>{ const t=tally(V[p]); const o=ovr[p];
         return `<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div>
         <div class="tally">👍 ${t.y} · 👎 ${t.n}</div>
