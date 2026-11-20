@@ -249,6 +249,16 @@ button.ghost{background:#8a55c9;color:#fff;box-shadow:0 4px 0 rgba(60,10,90,.45)
 @keyframes blink{50%{opacity:.55}}
 .prog.done{height:12px;width:50%;margin-top:4px}
 .chip.g{animation:none}
+.row.judge button{font-size:20px;padding:10px 16px}
+.row.judge button.on{outline:4px solid #fff}
+
+.vote-item{flex-wrap:wrap}
+.jr{background:#fff;color:var(--purple);box-shadow:none;border:2px solid var(--purple);margin-left:auto}
+.jr.on{background:var(--yellow);color:var(--ink)}
+.jr.done{font-family:'Jua';font-size:15px;padding:4px 8px}
+.wait-t{color:var(--yellow);animation:blink 1.2s infinite;margin:6px 0}
+.jalert{margin-top:12px;background:var(--yellow);color:var(--ink);font-family:'Jua';font-size:clamp(20px,2vw,30px);padding:8px 20px;border-radius:14px;animation:blink 1.2s infinite}
+.hvote .vote-item.req{outline:4px solid var(--yellow);background:rgba(255,210,63,.18)}
 </style>
 </head>
 <body>
@@ -1659,7 +1669,7 @@ const roomPath = code => `${DB_ROOT}/${code}`;
 /* ---------------- 공통 계산 ---------------- */
 const S = { role:null, code:null, pid:null, name:null, R:null, off:null, hostSid:null, ui:{} };
 function settings(){ return Object.assign(defaultSettings(), S.R?.meta?.settings||{}); }
-function defaultSettings(){ return {rounds:3, writeSec:90, turnSec:30, claimSec:15, voteSec:15, custom:'', useBase:true, autoNext:true, autoSec:15}; }
+function defaultSettings(){ return {rounds:3, writeSec:90, turnSec:30, claimSec:15, voteSec:15, custom:'', useBase:true, autoNext:true, autoSec:15, teacherJudge:false}; }
 function cellsOf(pid,round){ return S.R?.boards?.[pid]?.['r'+round] || {}; }
 function filledCount(cells){ let n=0; for(let i=0;i<9;i++) if(cells['c'+i]?.t) n++; return n; }
 function unmarked(cells){ const a=[]; for(let i=0;i<9;i++){ const x=cells['c'+i]; if(x?.t && !x.m) a.push(i); } return a; }
@@ -1826,19 +1836,24 @@ function renderStu(){
     else if(!inRound) line=`<div class="small">구경 중이에요</div>`;
     else if(myClaim && myClaim!=='-'){ const ci=+myClaim.slice(1); line=`<div class="mid">‘${esc(cells['c'+ci]?.t)}’ 비슷하다고 신청했어요</div>`; act=`<button class="ghost" onclick="A.claim(null)">신청 취소</button>`; bopt={sel:ci}; }
     else if(myClaim==='-') { line=`<div class="mid">‘없어요’를 눌렀어요</div>`; act=`<button class="ghost" onclick="A.claim(null)">다시 고르기</button>`; }
-    else if(unmarked(cells).length){ line=`<div class="mid">뜻이 같은 답이 있으면 그 칸을 눌러요</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ (큰 묶음과 그 안의 것은 달라요)<br>친구들이 투표로 정해요</div>`; bopt={click:unmarked(cells),onclick:'A.claimCell'}; act=`<button class="ghost" onclick="A.claim('-')">비슷한 답 없어요</button>`; }
+    else if(unmarked(cells).length){ line=`<div class="mid">뜻이 같은 답이 있으면 그 칸을 눌러요</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ (큰 묶음과 그 안의 것은 달라요)<br>${s.teacherJudge?'선생님이 정해요':'친구들이 투표로 정해요'}</div>`; bopt={click:unmarked(cells),onclick:'A.claimCell'}; act=`<button class="ghost" onclick="A.claim('-')">비슷한 답 없어요</button>`; }
     ban=`<div class="banner"><div class="small">${esc(pname(c.pid))}의 답 · ${cdSpan(st.deadline)}초</div><div class="called">${esc(c.t)}</div>${line}</div>`;
   } else if(ph==='vote'){
     const c=st.call||{}; const cl=st.claims||{}; const V=R.votes?.['n'+st.callNo]||{};
-    let items='';
+    let items=''; const tj=!!s.teacherJudge; const J=jreqOf(st);
+    const reqBtn = p => { if(tj) return ''; const o=st.ovr?.[p];
+      if(o===1||o===0) return `<div class="jr done">🧑‍🏫 ${o===1?'✅ 인정':'❌ 불인정'}</div>`;
+      const mine=!!J[p]?.[me], n=Object.keys(J[p]||{}).length;
+      return `<button class="sm jr ${mine?'on':''}" onclick="A.jreq('${p}',${mine?0:1})">${mine?'🙋 요청함 (취소)':'🙋 선생님 판정 요청'}${n?` · ${n}명`:''}</button>`; };
     for(const p in cl){
-      if(p===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>내 신청 — 친구들이 투표 중</small></div></div>`; continue; }
-      if(c.pid===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div></div>`; continue; }
+      if(tj){ const o=st.ovr?.[p]; items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}${p===me?' (내 신청)':''}</small></div><div class="tally">${o===1?'✅ 인정':o===0?'❌ 불인정':'⏳ 판정 중'}</div></div>`; continue; }
+      if(p===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>내 신청 — 친구들이 투표 중</small></div>${reqBtn(p)}</div>`; continue; }
+      if(c.pid===me){ items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div>${reqBtn(p)}</div>`; continue; }
       const v=V[p]?.[me];
       items+=`<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div><div class="row">
-        <button class="teal sm ${v===1?'on':''}" onclick="A.vote('${p}',1)">👍 같아요</button><button class="pink sm ${v===0?'on':''}" onclick="A.vote('${p}',0)">👎 달라요</button></div></div>`;
+        <button class="teal sm ${v===1?'on':''}" onclick="A.vote('${p}',1)">👍 같아요</button><button class="pink sm ${v===0?'on':''}" onclick="A.vote('${p}',0)">👎 달라요</button></div>${reqBtn(p)}</div>`;
     }
-    ban=`<div class="banner"><div class="small">투표 · ${cdSpan(st.deadline)}초</div><div class="called">${esc(c.t)}</div><div class="mid">이 답과 같은 뜻일까요?</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ · 너무 엄격하진 않게!</div>${items}</div>`;
+    ban=`<div class="banner"><div class="small">${tj?'🧑‍🏫 선생님이 판정하고 있어요':`투표 · ${cdSpan(st.deadline)}초`}</div><div class="called">${esc(c.t)}</div><div class="mid">이 답과 같은 뜻일까요?</div><div class="small">하얀색 = 흰색 ✔ · 콜라 ≠ 탄산음료 ✘ · 너무 엄격하진 않게!</div>${!tj&&waitingTeacher(st).length?'<div class="mid wait-t">🙋 선생님 판정을 기다리는 중…</div>':''}${items}</div>`;
     if(st.auto?.[me]!=null) bopt={hl:st.auto[me]};
   } else if(ph==='result'){
     ban=resultBanner(st.result,me);
@@ -1879,10 +1894,11 @@ A.doCall = i => { hideSheet(); req({type:'call',c:'c'+i}); };
 A.claimCell = i => {
   const x=cellsOf(S.pid,S.R.state.round)['c'+i];
   showSheet(`<h3>비슷하다고 신청할까요?</h3><div class="center"><div class="called" style="font-size:24px">${esc(S.R.state.call?.t)}</div> ≈ <div class="called" style="font-size:24px">${esc(x.t)}</div></div>
-    <div class="small center muted">친구들이 투표로 같은지 정해요</div>
+    <div class="small center muted">${settings().teacherJudge?'선생님이 같은지 정해요':'친구들이 투표로 같은지 정해요'}</div>
     <div class="actions"><button class="ghost" onclick="hideSheet()">취소</button><button class="teal" onclick="hideSheet();A.claim('c${i}')">신청하기</button></div>`);
 };
 A.claim = v => DB.set(roomPath(S.code)+`/claims/n${S.R.state.callNo}/${S.pid}`, v);
+A.jreq = (p,on) => DB.set(roomPath(S.code)+`/jreq/n${S.R.state.callNo}/${p}/${S.pid}`, on?true:null);
 A.vote = (p,v) => DB.set(roomPath(S.code)+`/votes/n${S.R.state.callNo}/${p}/${S.pid}`, v);
 
 function openWrite(i){
@@ -1973,6 +1989,7 @@ function renderHost(){
         <label>답 부르기 시간(초)</label><input type="number" min="10" max="120" step="5" value="${s.turnSec}" onchange="A.set('turnSec',this.value)">
         <label>비슷한 답 신청 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.claimSec}" onchange="A.set('claimSec',this.value)">
         <label>투표 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.voteSec}" onchange="A.set('voteSec',this.value)">
+        <label>비슷한 답은 학생 투표 없이 선생님이 판정</label><input type="checkbox" style="width:28px;height:28px" ${s.teacherJudge?'checked':''} onchange="A.set('teacherJudge',this.checked)">
         <label>라운드가 끝나면 순위를 보여 주고 자동으로 다음 라운드</label><input type="checkbox" style="width:28px;height:28px" ${s.autoNext!==false?'checked':''} onchange="A.set('autoNext',this.checked)">
         <label>순위표 보여 주는 시간(초)</label><input type="number" min="5" max="60" step="1" value="${s.autoSec}" onchange="A.set('autoSec',this.value)">
         <label>기본 주제 카드 ${TOPICS.length}개 쓰기</label><input type="checkbox" style="width:28px;height:28px" ${s.useBase!==false?'checked':''} onchange="A.set('useBase',this.checked)">
@@ -2018,12 +2035,16 @@ function renderHost(){
     const c=st.call, cl=st.claims||{}, V=R.votes?.['n'+st.callNo]||{}, ovr=st.ovr||{};
     stage=`<div class="mid">${esc(pname(c.pid))}의 답</div><div class="called" style="margin:10px 0">${esc(c.t)}</div>
       ${Object.keys(st.auto||{}).length?`<div class="chips">${Object.keys(st.auto).map(p=>`<span class="chip">${esc(pname(p))}</span>`).join('')}</div>`:''}
-      <div class="big" style="margin-top:12px">같은 뜻일까요? 투표! <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>${timebar(st.deadline)}
-      <div class="hvote">${Object.keys(cl).map(p=>{ const t=tally(V[p]); const o=ovr[p];
-        return `<div class="vote-item"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}</small></div>
-        <div class="tally">👍 ${t.y} · 👎 ${t.n}</div>
-        <button class="sm ${o===1?'teal':o===0?'pink':'ghost'}" onclick="A.ovr('${p}')">${o===1?'선생님: 인정':o===0?'선생님: 불인정':'투표대로'}</button></div>`; }).join('')}</div>${pendingHTML(true)}`;
-    ctrl=`<button class="pink" onclick="A.resolve()">⚖️ 판정하기</button>`;
+      ${s.teacherJudge?`<div class="big" style="margin-top:12px">🧑‍🏫 선생님 판정! 같은 뜻일까요?</div>`
+        :`<div class="big" style="margin-top:12px">같은 뜻일까요? 투표! <span class="cdbig">${cdSpan(st.deadline,'')}</span></div>${timebar(st.deadline)}`}
+      ${waitingTeacher(st).length?`<div class="jalert">🙋 학생들이 선생님 판정을 요청했어요! 판정할 때까지 기다려요</div>`:''}
+      <div class="hvote">${Object.keys(cl).map(p=>{ const t=tally(V[p]); const o=ovr[p]; const jr=Object.keys(jreqOf(st)[p]||{});
+        return `<div class="vote-item ${jr.length&&o===undefined?'req':''}"><div class="who">${esc(cl[p].t)}<small>${esc(pname(p))}${jr.length?` · 🙋 요청: ${jr.map(x=>esc(pname(x))).join(', ')}`:''}</small></div>
+        ${s.teacherJudge?'':`<div class="tally">👍 ${t.y} · 👎 ${t.n}</div>`}
+        <div class="row judge"><button class="${o===1?'teal on':'ghost'}" onclick="A.judge('${p}',1)">✅ 인정</button><button class="${o===0?'pink on':'ghost'}" onclick="A.judge('${p}',0)">❌ 불인정</button></div></div>`; }).join('')}</div>
+      <div class="muted" style="margin-top:8px">${s.teacherJudge?'모두 판정하면 바로 결과로 넘어가요':'선생님이 누르면 투표와 상관없이 그대로 정해져요 · 모두 판정하면 바로 넘어가요'}</div>
+      ${s.teacherJudge?'':pendingHTML(true)}`;
+    ctrl=`<button class="teal" onclick="A.judgeAll(1)">✅ 모두 인정</button><button class="ghost" onclick="A.judgeAll(0)">❌ 모두 불인정</button><button class="pink" onclick="A.resolve()">⚖️ ${s.teacherJudge?'판정 끝':'지금 판정하기'}</button>`;
   } else if(ph==='result'){
     const r=st.result;
     if(r.type==='jinx') stage=`<div class="result-jinx">★ 징크스! ★</div><div class="called" style="margin:14px 0">${esc(r.t)}</div><div class="big">${esc(pname(r.caller))} & ${esc(pname(r.who[0]))} <span style="color:var(--yellow)">+3점</span></div>`;
@@ -2066,6 +2087,7 @@ function pendingInfo(){
   const R=S.R, st=R.state||{}, ph=st.phase;
   if(ph==='write'){ const L=sortedPids(true).filter(p=>topicCount(cellsOf(p,st.round),st.tIdx)<3); return {label:'아직 다 못 쓴 친구', list:L, extra:p=>` ${topicCount(cellsOf(p,st.round),st.tIdx)}/3`}; }
   if(ph==='claim'){ const C=R.claims?.['n'+st.callNo]||{}; return {label:'아직 응답 안 한 친구', list:claimEligible().filter(p=>C[p]==null), extra:()=>''}; }
+  if(ph==='vote' && settings().teacherJudge) return null;
   if(ph==='vote'){ const V=R.votes?.['n'+st.callNo]||{}; const cl=Object.keys(st.claims||{}); return {label:'아직 투표 안 한 친구', list:voters(st).filter(v=>!cl.every(c=>c===v||V[c]?.[v]!=null)), extra:()=>''}; }
   if(ph==='topic') return {label:'주제 고르는 친구', list:st.picker?[st.picker]:[], extra:()=>''};
   return null;
@@ -2111,7 +2133,7 @@ function commit(upd){
   catch(e){ pr=Promise.reject(e); }
   return pr.catch(e=>{ console.error(e); toast('저장 실패: '+e.message,3500); }).finally(()=>{ setTimeout(()=>{lock=false;},150); });
 }
-const LOBBY_RESET = () => ({state:{phase:'lobby',round:0}, boards:null, scores:null, hist:null, claims:null, votes:null, req:null});
+const LOBBY_RESET = () => ({state:{phase:'lobby',round:0}, boards:null, scores:null, hist:null, claims:null, votes:null, jreq:null, req:null});
 function st0(){ return JSON.parse(JSON.stringify(S.R.state||{})); }
 
 A.set = (k,v) => { if(['rounds','writeSec','turnSec','claimSec','voteSec','autoSec'].includes(k)) v=Math.max(0,parseInt(v)||0); DB.set(room()+'/meta/settings/'+k, v); };
@@ -2140,7 +2162,7 @@ A.startGame = () => {
   const P=sortedPids(true); if(P.length<2) return toast('2명 이상 들어와야 해요');
   const st={phase:'lobby',round:1,callNo:0,first:P[rand(P.length)],topics:{}};
   enterTopic(st,0);
-  commit({state:st, boards:null, scores:null, hist:null, claims:null, votes:null, req:null});
+  commit({state:st, boards:null, scores:null, hist:null, claims:null, votes:null, jreq:null, req:null});
 };
 A.hpick = i => chooseTopic(i);
 A.redraw = () => { const st=st0(); drawCands(st); st.deadline=DB.now()+25000; commit({state:st}); };
@@ -2204,10 +2226,16 @@ function endClaim(){
   commit({state:st});
 }
 function voters(st){ return sortedPids(true).filter(p=>p!==st.call.pid); }
+function jreqOf(st){ return S.R.jreq?.['n'+st.callNo]||{}; }   // {claimPid:{요청한pid:true}}
+function waitingTeacher(st){ const J=jreqOf(st); return Object.keys(st.claims||{}).filter(c=>J[c] && Object.keys(J[c]).length && st.ovr?.[c]!==0 && st.ovr?.[c]!==1); }
+function allJudged(st){ const cl=Object.keys(st.claims||{}); return cl.length>0 && cl.every(c=>st.ovr?.[c]===0||st.ovr?.[c]===1); }
 function allVoted(st){
+  if(settings().teacherJudge) return false;
   const V=S.R.votes?.['n'+st.callNo]||{}; const vs=voters(st); const cl=Object.keys(st.claims||{});
   return vs.length>0 && vs.every(v=>cl.every(c=>c===v || V[c]?.[v]!=null));
 }
+A.judge = (p,v) => { const st=st0(); if(st.phase!=='vote') return; st.ovr=st.ovr||{}; if(st.ovr[p]===v) delete st.ovr[p]; else st.ovr[p]=v; commit({state:st}); };
+A.judgeAll = v => { const st=st0(); if(st.phase!=='vote') return; st.ovr={}; Object.keys(st.claims||{}).forEach(p=>st.ovr[p]=v); commit({state:st}); };
 A.ovr = p => { const st=st0(); st.ovr=st.ovr||{}; const o=st.ovr[p]; st.ovr[p]= o===undefined?1: o===1?0: null; if(st.ovr[p]===null) delete st.ovr[p]; commit({state:st}); };
 A.resolve = () => resolveCall(st0());
 function resolveCall(st){
@@ -2303,7 +2331,11 @@ function hostStep(){
       const C=R.claims?.['n'+st.callNo]||{}; const el=claimEligible();
       if(now>st.deadline || (el.length && el.every(p=>C[p]!=null))) endClaim();
       break; }
-    case 'vote': if(now>st.deadline || allVoted(st)) resolveCall(st0()); break;
+    case 'vote': if(waitingTeacher(st).length) { S.ui.judgedAt=null; break; }
+      if((!s.teacherJudge && now>st.deadline) || allVoted(st)) resolveCall(st0());
+      else if(allJudged(st)){ if(!S.ui.judgedAt) S.ui.judgedAt=now; else if(now-S.ui.judgedAt>800){ S.ui.judgedAt=null; resolveCall(st0()); } }
+      else S.ui.judgedAt=null;
+      break;
     case 'result': if(now>st.deadline) afterResult(); break;
     case 'roundEnd': if(st.deadline && now>st.deadline){ if(st.round>=s.rounds) A.finish(); else A.nextRound(); } break;
   }
